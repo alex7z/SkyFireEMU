@@ -54,7 +54,14 @@ public:
     
     virtual void OnNetworkStart()
     {
-        getSelf().call("OnNetworkStart");
+        try
+        {
+            sLog->outString(getSelf().call("to_s"));
+        }
+        catch(...)
+        {
+            sLog->outCrash("Exception occurred in ServerScriptDirector:OnNetworkStart()");
+        }
     }
     
     void default_OnNetworkStop()
@@ -64,7 +71,14 @@ public:
     
     virtual void OnNetworkStop()
     {
-        getSelf().call("OnNetworkStop");
+        try
+        {
+            sLog->outString(getSelf().call("to_s"));
+        }
+        catch(...)
+        {
+            sLog->outCrash("Exception occurred in ServerScriptDirector:OnNetworkStop()");
+        }
     }
 };
 
