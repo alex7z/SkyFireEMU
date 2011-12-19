@@ -41,6 +41,8 @@ RubyEngine::~RubyEngine()
 {
     if(running)
         Finalize();
+    
+    delete _kernel;
 }
 
 void RubyEngine::SetupRuby()

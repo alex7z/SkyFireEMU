@@ -56,7 +56,7 @@ public:
     {
         try
         {
-            sLog->outString(getSelf().call("to_s"));
+            sLog->outString(from_ruby<std::string>(getSelf().call("to_s")));
         }
         catch(...)
         {
@@ -73,7 +73,7 @@ public:
     {
         try
         {
-            sLog->outString(getSelf().call("to_s"));
+            sLog->outString(from_ruby<std::string>(getSelf().call("to_s")));
         }
         catch(...)
         {
