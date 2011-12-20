@@ -60,13 +60,14 @@ public:
     
     virtual void OnNetworkStart()
     {
-        if(getSelf() != Rice::Nil)
+        //if(getSelf() != Rice::Nil)
         {
+            rb_funcall(VALUE(getSelf()), rb_intern("OnNetworkStart"), 0);
             getSelf().call("OnNetworkStart");
         }
-        else
+        //else
         {
-            sLog->outString("getSelf() returned NULL");
+          //  sLog->outString("getSelf() returned NULL");
         }
     }
     
@@ -77,13 +78,13 @@ public:
     
     virtual void OnNetworkStop()
     {
-        if(getSelf() != Rice::Nil)
+        //if(getSelf() != Rice::Nil)
         {
             getSelf().call("OnNetworkStop");
         }
-        else
+        //else
         {
-            sLog->outString("getSelf() returned NULL");
+          //  sLog->outString("getSelf() returned NULL");
         }
     }
 };
