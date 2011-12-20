@@ -58,17 +58,16 @@ public:
         ServerScript::OnNetworkStart();
     }
     
+    static ID get_id(VALUE _self)
+    {
+        return rb_intern("OnNetworkStart");
+    }
+    
     virtual void OnNetworkStart()
     {
-        //if(getSelf() != Rice::Nil)
-        {
-            rb_funcall(VALUE(getSelf()), rb_intern("network_start"), 0);
-            //getSelf().call("OnNetworkStart");
-        }
-        //else
-        {
-          //  sLog->outString("getSelf() returned NULL");
-        }
+         
+        ID _id = Rice::protect(get_id, getSelf());
+        rb_funcall(getSelf(), _id, 0);
     }
     
     void default_OnNetworkStop()
