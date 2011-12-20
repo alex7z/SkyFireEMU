@@ -54,7 +54,7 @@ public:
     
     virtual void OnNetworkStart()
     {
-        if(getSelf() != NULL)
+        if(getSelf() != Qnil)
         {
             getSelf().call("OnNetworkStart", 1);
         }
@@ -71,7 +71,7 @@ public:
     
     virtual void OnNetworkStop()
     {
-        if(getSelf() != NULL)
+        if(getSelf() != Qnil)
         {
             getSelf().call("OnNetworkStop", 1);
         }
