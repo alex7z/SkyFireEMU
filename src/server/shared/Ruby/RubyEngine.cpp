@@ -100,7 +100,7 @@ void RubyEngine::SetupRuby()
     
     Rice::define_class<ServerScript>("ServerScript")
         .define_director<ServerScriptDirector>()
-        .define_constructor(Rice::Constructor<ServerScriptDirector, Rice::Object, std::string>())
+        .define_constructor(Rice::Constructor<ServerScriptDirector, Rice::Object>())
         .define_method("OnNetworkStart", &ServerScriptDirector::default_OnNetworkStart)
         .define_method("OnNetworkStop", &ServerScriptDirector::default_OnNetworkStop);
     
