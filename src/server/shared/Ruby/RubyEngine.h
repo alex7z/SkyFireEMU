@@ -54,7 +54,7 @@ public:
     
     virtual void OnNetworkStart()
     {
-        if(getSelf() != Qnil)
+        if(getSelf() != Rice::Nil)
         {
             getSelf().call("OnNetworkStart", 1);
         }
@@ -71,7 +71,7 @@ public:
     
     virtual void OnNetworkStop()
     {
-        if(getSelf() != Qnil)
+        if(getSelf() != Rice::Nil)
         {
             getSelf().call("OnNetworkStop", 1);
         }
