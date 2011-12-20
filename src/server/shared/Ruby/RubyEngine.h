@@ -47,6 +47,11 @@ public:
         sLog->outString("Initialized ServerScriptDirector with name %s", name.c_str());
     }
     
+    ~ServerScriptDirector()
+    {
+        sLog->outString("Destructing ServerScriptDirector instance");
+    }
+    
     void default_OnNetworkStart()
     {
         ServerScript::OnNetworkStart();
@@ -56,7 +61,7 @@ public:
     {
         if(getSelf() != Rice::Nil)
         {
-            getSelf().call("OnNetworkStart", 1);
+            getSelf().call("OnNetworkStart");
         }
         else
         {
@@ -73,7 +78,7 @@ public:
     {
         if(getSelf() != Rice::Nil)
         {
-            getSelf().call("OnNetworkStop", 1);
+            getSelf().call("OnNetworkStop");
         }
         else
         {

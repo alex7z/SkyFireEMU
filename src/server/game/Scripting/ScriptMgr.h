@@ -214,6 +214,7 @@ class ServerScript : public ScriptObject
         ServerScript(const char* name);
 
     public:
+        virtual ~ServerScript() { }
 
         // Called when reactive socket I/O is started (WorldSocketMgr).
         virtual void OnNetworkStart() { }
