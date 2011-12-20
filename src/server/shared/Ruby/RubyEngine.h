@@ -54,13 +54,13 @@ public:
     
     virtual void OnNetworkStart()
     {
-        try
+        if(getSelf() != NULL)
         {
-            sLog->outString(from_ruby<std::string>(getSelf().call("to_s")).c_str());
+            getSelf().call("OnNetworkStart", 1);
         }
-        catch(...)
+        else
         {
-            sLog->outCrash("Exception occurred in ServerScriptDirector:OnNetworkStart()");
+            sLog->outString("getSelf() returned NULL");
         }
     }
     
@@ -71,13 +71,13 @@ public:
     
     virtual void OnNetworkStop()
     {
-        try
+        if(getSelf() != NULL)
         {
-            sLog->outString(from_ruby<std::string>(getSelf().call("to_s")).c_str());
+            getSelf().call("OnNetworkStop", 1);
         }
-        catch(...)
+        else
         {
-            sLog->outCrash("Exception occurred in ServerScriptDirector:OnNetworkStop()");
+            sLog->outString("getSelf() returned NULL");
         }
     }
 };
