@@ -62,8 +62,8 @@ public:
     {
         //if(getSelf() != Rice::Nil)
         {
-            rb_funcall(VALUE(getSelf()), rb_intern("OnNetworkStart"), 0);
-            getSelf().call("OnNetworkStart");
+            rb_funcall(VALUE(getSelf()), rb_intern("network_start"), 0);
+            //getSelf().call("OnNetworkStart");
         }
         //else
         {
