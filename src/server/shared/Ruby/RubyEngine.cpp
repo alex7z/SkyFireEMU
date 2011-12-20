@@ -98,9 +98,10 @@ void RubyEngine::SetupRuby()
         .define_method("BuildValuesUpdateBlockForPlayer", &Object::BuildValuesUpdateBlockForPlayer)
         .define_method("BuildOutOfRangeUpdateBlock", &Object::BuildOutOfRangeUpdateBlock);
     
-    Rice::define_class<ServerScript>("ServerScript")
+    Rice::define_class<ServerScript>("Internal_ServerScript");
+    Rice::define_class<ServerScriptDirector, ServerScript>("ServerScript")
         .define_director<ServerScriptDirector>()
-        .define_constructor(Rice::Constructor<ServerScriptDirector, Rice::Object>())
+        .define_constructor(Rice::Constructor<ServerScriptDirector, Rice::Object, std::string>())
         .define_method("OnNetworkStart", &ServerScriptDirector::default_OnNetworkStart)
         .define_method("OnNetworkStop", &ServerScriptDirector::default_OnNetworkStop);
     

@@ -42,9 +42,9 @@ struct is_value<VALUE>
 class ServerScriptDirector : public ServerScript, public Rice::Director 
 {
 public:
-    ServerScriptDirector(Rice::Object self) : Director(self)
+    ServerScriptDirector(Rice::Object self, std::string name) : Director(self), ServerScript(name.c_str())
     { 
-        sLog->outString("Initialized ServerScriptDirector with name "/*, name.c_str()*/);
+        sLog->outString("Initialized ServerScriptDirector with name ", name.c_str());
     }
     
     ~ServerScriptDirector()
