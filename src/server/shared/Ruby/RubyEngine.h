@@ -39,55 +39,6 @@ struct is_value<VALUE>
     static const bool value = true;
 };
 
-class ServerScriptDirector : public ServerScript, public Rice::Director 
-{
-public:
-    ServerScriptDirector(Rice::Object self, std::string name) : Director(self), ServerScript(name.c_str())
-    { 
-        sLog->outString("Initialized ServerScriptDirector with name ", name.c_str());
-        //sLog->outString("self is a class of ServerScript? %s", self.is_a();
-    }
-    
-    ~ServerScriptDirector()
-    {
-        sLog->outString("Destructing ServerScriptDirector instance");
-    }
-    
-    void default_OnNetworkStart()
-    {
-        ServerScript::OnNetworkStart();
-    }
-    
-    static ID get_id(VALUE _self)
-    {
-        return rb_intern("OnNetworkStart");
-    }
-    
-    virtual void OnNetworkStart()
-    {
-         
-        ID _id = Rice::protect(get_id, getSelf());
-        rb_funcall(getSelf(), _id, 0);
-    }
-    
-    void default_OnNetworkStop()
-    {
-        ServerScript::OnNetworkStop();
-    }
-    
-    virtual void OnNetworkStop()
-    {
-        //if(getSelf() != Rice::Nil)
-        {
-            getSelf().call("OnNetworkStop");
-        }
-        //else
-        {
-          //  sLog->outString("getSelf() returned NULL");
-        }
-    }
-};
-
 class RubyEngine
 {
 public:
@@ -196,10 +147,10 @@ public:
    
     // , typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7, typename Arg8, typename Arg9, typename Arg10>
     // , Arg2& a2, Arg3& a3 = Arg3(NULL), Arg4& a4 = Arg4(NULL), Arg5& a5 = Arg5(NULL), Arg6& a6 = Arg6(NULL), Arg7& a7 = Arg7(NULL), Arg8& a8 = Arg8(NULL), Arg9& a9 = Arg9(NULL), Arg10& a10 = Arg10(NULL))
+    Rice::Module* _kernel;
 private:
     bool running;
     friend class ACE_Singleton<RubyEngine, ACE_Thread_Mutex>;
-    Rice::Module* _kernel;
 };
 
 #define sRubyEngine ACE_Singleton<RubyEngine, ACE_Thread_Mutex>::instance()
@@ -208,4 +159,55 @@ private:
 extern std::list<std::string> _ruby_script_adders;
 void CallRubyAddSC();
 void AddSC(std::string name);
+
+class ServerScriptDirector : public ServerScript, public Rice::Director 
+{
+public:
+    ServerScriptDirector(Rice::Object self, std::string name) : Director(self), ServerScript(name.c_str())
+    { 
+        sLog->outString("Initialized ServerScriptDirector with name %s", name.c_str());
+        //sLog->outString("self is a class of ServerScript? %s", self.is_a();
+    }
+    
+    ~ServerScriptDirector()
+    {
+        sLog->outString("Destructing ServerScriptDirector instance");
+    }
+    
+    void default_OnNetworkStart()
+    {
+        sLog->outString("Calling super");
+        ServerScript::OnNetworkStart();
+    }
+    
+    static ID get_id(VALUE _self)
+    {
+        return rb_intern("OnNetworkStart");
+    }
+    
+    virtual void OnNetworkStart()
+    {
+        Rice::Object _result = sRubyEngine->_kernel->instance_eval("class MySerC < ServerScript; def initialize; super 'MySerC'; end; def OnNetworkStart; puts 'Hi'; super; end; end; ____samp = MySerC.new;");
+        _result.call("OnNetworkStart");
+        //ID _id = Rice::protect(get_id, getSelf());
+        //rb_funcall(getSelf(), _id, 0);
+    }
+    
+    void default_OnNetworkStop()
+    {
+        ServerScript::OnNetworkStop();
+    }
+    
+    virtual void OnNetworkStop()
+    {
+        //if(getSelf() != Rice::Nil)
+        {
+            getSelf().call("OnNetworkStop");
+        }
+        //else
+        {
+          //  sLog->outString("getSelf() returned NULL");
+        }
+    }
+};
 #endif
