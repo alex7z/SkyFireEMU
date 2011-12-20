@@ -45,6 +45,7 @@ public:
     ServerScriptDirector(Rice::Object self, std::string name) : Director(self), ServerScript(name.c_str())
     { 
         sLog->outString("Initialized ServerScriptDirector with name ", name.c_str());
+        //sLog->outString("self is a class of ServerScript? %s", self.is_a();
     }
     
     ~ServerScriptDirector()
