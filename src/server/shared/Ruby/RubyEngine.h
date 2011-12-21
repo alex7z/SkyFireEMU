@@ -148,8 +148,8 @@ public:
     // , typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7, typename Arg8, typename Arg9, typename Arg10>
     // , Arg2& a2, Arg3& a3 = Arg3(NULL), Arg4& a4 = Arg4(NULL), Arg5& a5 = Arg5(NULL), Arg6& a6 = Arg6(NULL), Arg7& a7 = Arg7(NULL), Arg8& a8 = Arg8(NULL), Arg9& a9 = Arg9(NULL), Arg10& a10 = Arg10(NULL))
     Rice::Module* _kernel;
-private:
     bool running;
+private:
     friend class ACE_Singleton<RubyEngine, ACE_Thread_Mutex>;
 };
 
@@ -187,8 +187,18 @@ public:
     
     virtual void OnNetworkStart()
     {
-        Rice::Object _result = sRubyEngine->_kernel->instance_eval("class MySerC; def initialize; puts('MySerC'); end; def OnNetworkStart; puts 'Hi'; super; end; end; ____samp = MySerC.new;");
-        _result.call("OnNetworkStart");
+        if(sRubyEngine->running)
+        {
+            sLog->outString("Its RUNNING");
+            if(sRubyEngine->_kernel)
+            {
+                sLog->outString("its NOT NULL");
+                sRubyEngine->_kernel->instance_eval("test1");
+                sRubyEngine->_kernel->instance_eval("$_script1.OnNetworkStart");
+                sRubyEngine->_kernel->instance_eval("$_script2.OnNetworkStart");
+            }
+        }
+        //_result.call("OnNetworkStart");
         //ID _id = Rice::protect(get_id, getSelf());
         //rb_funcall(getSelf(), _id, 0);
     }
@@ -200,13 +210,16 @@ public:
     
     virtual void OnNetworkStop()
     {
-        //if(getSelf() != Rice::Nil)
+        if(sRubyEngine->running)
         {
-            getSelf().call("OnNetworkStop");
-        }
-        //else
-        {
-          //  sLog->outString("getSelf() returned NULL");
+            sLog->outString("Its RUNNINGasdf");
+            if(sRubyEngine->_kernel)
+            {
+                sLog->outString("its NOT NULLsdfg");
+                sRubyEngine->_kernel->instance_eval("test1");
+                sRubyEngine->_kernel->instance_eval("$_script1.OnNetworkStop");
+                sRubyEngine->_kernel->instance_eval("$_script2.OnNetworkStop");
+            }
         }
     }
 };
