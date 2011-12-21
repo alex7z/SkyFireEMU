@@ -112,7 +112,8 @@ void CallRubyAddSC()
 {
     //for(std::list<std::string>::iterator itr = _ruby_script_adders.begin(); itr != _ruby_script_adders.end(); ++itr)
     sRubyEngine->_kernel->instance_eval("test1");
-        sRubyEngine->_kernel->instance_eval("AddRubyScripts");
+    sRubyEngine->_kernel->instance_eval("addRubyScripts");
+    sRubyEngine->_kernel->instance_eval("test1");
 }
 
 void AddSC(std::string name)
