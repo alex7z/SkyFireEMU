@@ -21,7 +21,7 @@ void RubyEngine::Initialize()
         return;
     }
     running = true;
-    _kernel.instance_eval("test1");
+    _kernel->instance_eval("test1");
     sLog->outString("Ruby engine initialized correctly");
 }
 
