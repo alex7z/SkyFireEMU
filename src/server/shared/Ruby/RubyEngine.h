@@ -180,27 +180,9 @@ public:
         ServerScript::OnNetworkStart();
     }
     
-    static ID get_id(VALUE _self)
-    {
-        return rb_intern("OnNetworkStart");
-    }
-    
     virtual void OnNetworkStart()
     {
-        if(sRubyEngine->running)
-        {
-            sLog->outString("Its RUNNING");
-            if(sRubyEngine->_kernel)
-            {
-                sLog->outString("its NOT NULL");
-                sRubyEngine->_kernel->instance_eval("test1");
-                sRubyEngine->_kernel->instance_eval("$_script1.OnNetworkStart");
-                sRubyEngine->_kernel->instance_eval("$_script2.OnNetworkStart");
-            }
-        }
-        //_result.call("OnNetworkStart");
-        //ID _id = Rice::protect(get_id, getSelf());
-        //rb_funcall(getSelf(), _id, 0);
+        getSelf().call("OnNetworkStart");
     }
     
     void default_OnNetworkStop()
@@ -210,17 +192,7 @@ public:
     
     virtual void OnNetworkStop()
     {
-        if(sRubyEngine->running)
-        {
-            sLog->outString("Its RUNNINGasdf");
-            if(sRubyEngine->_kernel)
-            {
-                sLog->outString("its NOT NULLsdfg");
-                sRubyEngine->_kernel->instance_eval("test1");
-                sRubyEngine->_kernel->instance_eval("$_script1.OnNetworkStop");
-                sRubyEngine->_kernel->instance_eval("$_script2.OnNetworkStop");
-            }
-        }
+        getSelf().call("OnNetworkStop");
     }
 };
 #endif
