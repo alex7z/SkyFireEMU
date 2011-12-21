@@ -187,7 +187,7 @@ public:
     
     virtual void OnNetworkStart()
     {
-        Rice::Object _result = sRubyEngine->_kernel->instance_eval("class MySerC < ServerScript; def initialize; super('MySerC'); end; def OnNetworkStart; puts 'Hi'; super; end; end; ____samp = MySerC.new;");
+        Rice::Object _result = sRubyEngine->_kernel->instance_eval("class MySerC; def initialize; puts('MySerC'); end; def OnNetworkStart; puts 'Hi'; super; end; end; ____samp = MySerC.new;");
         _result.call("OnNetworkStart");
         //ID _id = Rice::protect(get_id, getSelf());
         //rb_funcall(getSelf(), _id, 0);

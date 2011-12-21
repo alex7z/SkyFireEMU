@@ -21,12 +21,13 @@ void RubyEngine::Initialize()
         return;
     }
     running = true;
-    call_function<VALUE>(Qnil, "test1");
+    _kernel.call("test1");
     sLog->outString("Ruby engine initialized correctly");
 }
 
 void RubyEngine::Finalize()
 {
+    sLog->outString("Finalizing...");
     ruby_finalize();
     running = false;
 }
@@ -41,7 +42,7 @@ RubyEngine::~RubyEngine()
 {
     if(running)
         Finalize();
-    
+    sLog->outString("Deleting RubyEngine");
     delete _kernel;
 }
 
