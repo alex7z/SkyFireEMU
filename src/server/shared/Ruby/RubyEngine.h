@@ -101,9 +101,9 @@ public:
         ServerScript::OnSocketOpen(socket);
     }
     
-    virtual void OnSocketOpen(WorldSocket* socket)
+    virtual void OnSocketOpen(WorldSocket* /*socket*/)
     {
-        getSelf().call("OnSocketOpen", socket);
+        getSelf().call("OnSocketOpen", Rice::Nil);
     }
     
     void default_OnSocketClose(WorldSocket* socket, bool wasNew)
@@ -111,9 +111,9 @@ public:
         ServerScript::OnSocketClose(socket, wasNew);
     }
     
-    virtual void OnSocketClose(WorldSocket* socket, bool wasNew)
+    virtual void OnSocketClose(WorldSocket* /*socket*/, bool wasNew)
     {
-        getSelf().call("OnSocketClose", socket, wasNew);
+        getSelf().call("OnSocketClose", Rice::Nil, wasNew);
     }
 
     void default_OnPacketReceive(WorldSocket* socket, WorldPacket packet)
@@ -121,9 +121,9 @@ public:
         ServerScript::OnPacketReceive(socket, packet);
     }
     
-    virtual void OnPacketReceive(WorldSocket* socket, WorldPacket packet)
+    virtual void OnPacketReceive(WorldSocket* /*socket*/, WorldPacket packet)
     {
-        getSelf().call("OnPacketReceive", socket, packet);
+        getSelf().call("OnPacketReceive", Rice::Nil, packet);
     }
     
     void default_OnPacketSend(WorldSocket* socket, WorldPacket packet)
@@ -131,9 +131,9 @@ public:
         ServerScript::OnPacketSend(socket, packet);
     }
     
-    virtual void OnPacketSend(WorldSocket* socket, WorldPacket packet)
+    virtual void OnPacketSend(WorldSocket* /*socket*/, WorldPacket packet)
     {
-        getSelf().call("OnPacketSend", socket, packet);
+        getSelf().call("OnPacketSend", Rice::Nil, packet);
     }
     
     void default_OnUnknownPacketReceive(WorldSocket* socket, WorldPacket packet)
@@ -141,9 +141,9 @@ public:
         ServerScript::OnUnknownPacketReceive(socket, packet);
     }
     
-    virtual void OnUnknownPacketReceive(WorldSocket* socket, WorldPacket packet)
+    virtual void OnUnknownPacketReceive(WorldSocket* /*socket*/, WorldPacket packet)
     {
-        getSelf().call("OnUnknownPacketReceive", socket, packet);
+        getSelf().call("OnUnknownPacketReceive", Rice::Nil, packet);
     }
 };
 #endif

@@ -100,21 +100,15 @@ void RubyEngine::SetupRuby()
         .define_method("BuildValuesUpdateBlockForPlayer", &Object::BuildValuesUpdateBlockForPlayer)
         .define_method("BuildOutOfRangeUpdateBlock",      &Object::BuildOutOfRangeUpdateBlock);
     
-    Rice::define_class<WorldSocket>("WorldSocket")
-        .define_method("SendPacket", &WorldSocket::SendPacket)
-        .define_method("IsClosed", &WorldSocket::IsClosed)
-        .define_method("GetRemoteAddress", &WorldSocket::GetRemoteAddress)
-        .define_method("CloseSocket", &WorldSocket::CloseSocket);
-        
     Rice::define_class<ServerScript>("ServerScript")
         .define_director<ServerScriptDirector>()
         .define_constructor(Rice::Constructor<ServerScriptDirector, Rice::Object, std::string>())
         .define_method("OnNetworkStart",        &ServerScriptDirector::default_OnNetworkStart)
-        .define_method("OnNetworkStop",         &ServerScriptDirector::default_OnNetworkStop);
-        .define_method("OnSocketOpen",          &ServerScriptDirector::default_OnSocketOpen);
-        .define_method("OnSocketClose",         &ServerScriptDirector::default_OnSocketClose);
-        .define_method("OnPacketReceive",       &ServerScriptDirector::default_OnPacketReceive);
-        .define_method("OnPacketSend",          &ServerScriptDirector::default_OnPacketSend);
+        .define_method("OnNetworkStop",         &ServerScriptDirector::default_OnNetworkStop)
+        .define_method("OnSocketOpen",          &ServerScriptDirector::default_OnSocketOpen)
+        .define_method("OnSocketClose",         &ServerScriptDirector::default_OnSocketClose)
+        .define_method("OnPacketReceive",       &ServerScriptDirector::default_OnPacketReceive)
+        .define_method("OnPacketSend",          &ServerScriptDirector::default_OnPacketSend)
         .define_method("OnUnknownPacketReceive",&ServerScriptDirector::default_OnUnknownPacketReceive);
 }    
 
