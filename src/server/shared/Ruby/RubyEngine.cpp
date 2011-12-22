@@ -1,7 +1,5 @@
 #include "RubyEngine.h"
 
-std::list<std::string> _ruby_script_adders;
-
 void RubyEngine::Initialize()
 {
     if(running)
@@ -21,13 +19,11 @@ void RubyEngine::Initialize()
         return;
     }
     running = true;
-    _kernel->instance_eval("test1");
     sLog->outString("Ruby engine initialized correctly");
 }
 
 void RubyEngine::Finalize()
 {
-    sLog->outString("Finalizing...");
     ruby_finalize();
     running = false;
 }
@@ -35,15 +31,12 @@ void RubyEngine::Finalize()
 RubyEngine::RubyEngine()
 {
     running = false;
-    //Initialize();
 }
 
 RubyEngine::~RubyEngine()
 {
     if(running)
         Finalize();
-    sLog->outString("Deleting RubyEngine");
-    delete _kernel;
 }
 
 void RubyEngine::SetupRuby()
@@ -104,19 +97,9 @@ void RubyEngine::SetupRuby()
         .define_constructor(Rice::Constructor<ServerScriptDirector, Rice::Object, std::string>())
         .define_method("OnNetworkStart", &ServerScriptDirector::default_OnNetworkStart)
         .define_method("OnNetworkStop", &ServerScriptDirector::default_OnNetworkStop);
-    
-    _kernel->define_method("AddSC", &AddSC);
-}
+}    
 
 void CallRubyAddSC()
 {
-    //for(std::list<std::string>::iterator itr = _ruby_script_adders.begin(); itr != _ruby_script_adders.end(); ++itr)
-    sRubyEngine->_kernel->instance_eval("test1");
     sRubyEngine->_kernel->instance_eval("addRubyScripts");
-    sRubyEngine->_kernel->instance_eval("test1");
-}
-
-void AddSC(std::string name)
-{
-    _ruby_script_adders.push_back(name);
 }
