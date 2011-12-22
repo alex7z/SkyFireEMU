@@ -838,7 +838,7 @@ CREATE TABLE `characters` (
   `ammoId` int(10) unsigned NOT NULL DEFAULT '0',
   `knownTitles` longtext,
   `actionBars` tinyint(3) unsigned NOT NULL DEFAULT '0',
-  `currentPetSlot` int(10) DEFAULT NULL,
+  `currentPetSlot` tinyint(3) DEFAULT NULL,
   `petSlotUsed` int(10) DEFAULT NULL,
   `grantableLevels` tinyint(3) unsigned NOT NULL DEFAULT '0',
   `deleteInfos_Account` int(10) unsigned DEFAULT NULL,
@@ -1569,7 +1569,6 @@ LOCK TABLES `worldstates` WRITE;
 /*!40000 ALTER TABLE `worldstates` DISABLE KEYS */;
 /*!40000 ALTER TABLE `worldstates` ENABLE KEYS */;
 UNLOCK TABLES;
-DELIMITER ;;
 DELIMITER ;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
