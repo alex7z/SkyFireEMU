@@ -15,6 +15,7 @@
 #include "rice/Constructor.hpp"
 #include "rice/Module.hpp"
 #include "Chat.h"
+#include "WorldSocket.h"
 
 class RubyEngine
 {
@@ -105,9 +106,9 @@ public:
         getSelf().call("OnSocketOpen", socket);
     }
     
-    void default_OnSocketClose(WorldSocket* socket)
+    void default_OnSocketClose(WorldSocket* socket, bool wasNew)
     {
-        ServerScript::OnSocketClose(socket);
+        ServerScript::OnSocketClose(socket, wasNew);
     }
     
     virtual void OnSocketClose(WorldSocket* socket, bool wasNew)
