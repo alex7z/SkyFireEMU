@@ -135,6 +135,7 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/Configuration
   ${CMAKE_CURRENT_SOURCE_DIR}/Cryptography
+  ${CMAKE_CURRENT_SOURCE_DIR}/Cryptography/Authentication
   ${CMAKE_CURRENT_SOURCE_DIR}/Database
   ${CMAKE_CURRENT_SOURCE_DIR}/DataStores
   ${CMAKE_CURRENT_SOURCE_DIR}/Debugging
