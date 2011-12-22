@@ -94,5 +94,55 @@ public:
     {
         getSelf().call("OnNetworkStop");
     }
+    
+    void default_OnSocketOpen(WorldSocket* socket)
+    {
+        ServerScript::OnSocketOpen(socket);
+    }
+    
+    virtual void OnSocketOpen(WorldSocket* socket)
+    {
+        getSelf().call("OnSocketOpen", socket);
+    }
+    
+    void default_OnSocketClose(WorldSocket* socket)
+    {
+        ServerScript::OnSocketClose(socket);
+    }
+    
+    virtual void OnSocketClose(WorldSocket* socket, bool wasNew)
+    {
+        getSelf().call("OnSocketClose", socket, wasNew);
+    }
+
+    void default_OnPacketReceive(WorldSocket* socket, WorldPacket packet)
+    {
+        ServerScript::OnPacketReceive(socket, packet);
+    }
+    
+    virtual void OnPacketReceive(WorldSocket* socket, WorldPacket packet)
+    {
+        getSelf().call("OnPacketReceive", socket, packet);
+    }
+    
+    void default_OnPacketSend(WorldSocket* socket, WorldPacket packet)
+    {
+        ServerScript::OnPacketSend(socket, packet);
+    }
+    
+    virtual void OnPacketSend(WorldSocket* socket, WorldPacket packet)
+    {
+        getSelf().call("OnPacketSend", socket, packet);
+    }
+    
+    void default_OnUnknownPacketReceive(WorldSocket* socket, WorldPacket packet)
+    {
+        ServerScript::OnUnknownPacketReceive(socket, packet);
+    }
+    
+    virtual void OnUnknownPacketReceive(WorldSocket* socket, WorldPacket packet)
+    {
+        getSelf().call("OnUnknownPacketReceive", socket, packet);
+    }
 };
 #endif
