@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -37,6 +37,7 @@
 #include "Unit.h"
 #include "Util.h"                                           // for Tokens typedef
 #include "WorldSession.h"
+#include "Group.h"
 
 // for template
 #include "SpellMgr.h"
@@ -1151,13 +1152,15 @@ class Player : public Unit, public GridObject<Player>
 
         void Update(uint32 time);
 
-        static bool BuildEnumData(QueryResult result, WorldPacket* data);
+        static bool BuildEnumData(PreparedQueryResult result, WorldPacket* data);
 
         void SetInWater(bool apply);
 
         bool IsInWater() const { return m_isInWater; }
         bool IsUnderWater() const;
         bool IsFalling() { return GetPositionZ() < m_lastFallZ; }
+
+        void SendPetGUIDs();
 
         void SendInitialPacketsBeforeAddToMap();
         void SendInitialPacketsAfterAddToMap();
@@ -1341,10 +1344,6 @@ class Player : public Unit, public GridObject<Player>
 
         void ApplyEquipCooldown(Item* pItem);
 
-        void SetAmmo(uint32 item);
-        void RemoveAmmo();
-        bool CheckAmmoCompatibility(const ItemTemplate *ammo_proto) const;
-
         void QuickEquipItem(uint16 pos, Item *pItem);
         void VisualizeItem(uint8 slot, Item *pItem);
         void SetVisibleItemSlot(uint8 slot, Item *pItem);
@@ -1380,7 +1379,7 @@ class Player : public Unit, public GridObject<Player>
         bool IsUseEquipedWeapon(bool mainhand) const
         {
             // disarm applied only to mainhand weapon
-            return !IsInFeralForm() && (!mainhand || !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISARMED));
+            return !mainhand || !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISARMED);
         }
         bool IsTwoHandUsed() const
         {
@@ -1694,7 +1693,7 @@ class Player : public Unit, public GridObject<Player>
 
         void SendProficiency(ItemClass itemClass, uint32 itemSubclassMask);
         void SendInitialSpells();
-        bool addSpell(uint32 spell_id, bool active, bool learning, bool dependent, bool disabled, bool loading = false);
+        bool addSpell(uint32 spellId, bool active, bool learning, bool dependent, bool disabled, bool loading = false);
         void learnSpell(uint32 spell_id, bool dependent);
         void removeSpell(uint32 spell_id, bool disabled = false, bool learn_low_rank = true);
         void resetSpells(bool myClassOnly = false);
@@ -1718,11 +1717,13 @@ class Player : public Unit, public GridObject<Player>
         void LearnTalent(uint32 talentId, uint32 talentRank, bool one = true);
         void LearnPetTalent(uint64 petGuid, uint32 talentId, uint32 talentRank);
 
-        bool AddTalent(uint32 spell, uint8 spec, bool learning);
+        bool AddTalent(uint32 spellId, uint8 spec, bool learning);
         bool HasTalent(uint32 spell_id, uint8 spec) const;
 
-        void SetTalentBranchSpec(uint32 branchSpec, uint8 spec) { m_branchSpec[spec] = branchSpec; }
+        void SetTalentBranchSpec(uint32 branchSpec, uint8 spec);
         uint32 GetTalentBranchSpec(uint8 spec) const { return m_branchSpec[spec]; }
+        void RecalculateMasteryAuraEffects(uint32 branch);
+        void UpdateMasteryAuras(uint32 branch);
 
         uint32 CalculateTalentsPoints() const;
 
@@ -1917,7 +1918,6 @@ class Player : public Unit, public GridObject<Player>
         void UpdateSpellPower();
         void UpdateMaxHealth();
         void UpdateMaxPower(Powers power);
-        void ApplyFeralAPBonus(int32 amount, bool apply);
         void UpdateAttackPowerAndDamage(bool ranged = false);
         void UpdateShieldBlockValue();
         void UpdateDamagePhysical(WeaponAttackType attType);
@@ -2412,7 +2412,7 @@ class Player : public Unit, public GridObject<Player>
             else if(HasSpell(883))
                 last_known = 1;
 
-            for(uint32 i = uint32(PET_SLOT_HUNTER_FIRST); i < last_known; i++)
+            for (uint32 i = uint32(PET_SLOT_HUNTER_FIRST); i < last_known; i++)
                 if((m_petSlotUsed & (1 << i)) == 0)
                     return PetSlot(i);
 
@@ -2526,6 +2526,23 @@ class Player : public Unit, public GridObject<Player>
         void SetAuraUpdateMaskForRaid(uint8 slot) { m_auraRaidUpdateMask |= (uint64(1) << slot); }
         Player* GetNextRandomRaidMember(float radius);
         PartyResult CanUninviteFromGroup() const;
+        uint8 GetRoles()
+        {
+            if (Group* group = GetGroup())
+            {
+                return group->GetRoles(GetGUID());
+            }
+            return 0;
+        }
+
+        void SetRoles(uint8 _roles)
+        {
+            if (Group* group = GetGroup())
+            {
+                group->SetRoles(GetGUID(), _roles);
+            }
+        }
+
         // Battleground Group System
         void SetBattlegroundOrBattlefieldRaid(Group *group, int8 subgroup = -1);
         void RemoveFromBattlegroundOrBattlefieldRaid();
@@ -2762,7 +2779,6 @@ class Player : public Unit, public GridObject<Player>
         float m_auraBaseMod[BASEMOD_END][MOD_END];
         int16 m_baseRatingValue[MAX_COMBAT_RATING];
 
-        uint32 m_baseFeralAP;
         uint32 m_baseManaRegen;
         uint32 m_baseHealthRegen;
 

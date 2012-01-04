@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,8 +19,12 @@
 
 #ifdef _WIN32
   #include <winsock2.h>
+  #include <mysql.h>
+#elif defined(__APPLE__)
+ #include <mysql.h>
+#else
+ #include <mysql/mysql.h>
 #endif
-#include <mysql.h>
 
 #include "MySQLConnection.h"
 #include "MySQLThreading.h"

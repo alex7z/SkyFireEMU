@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -39,7 +39,7 @@
 #include "Guild.h"
 #include "GuildMgr.h"
 #include "VehicleDefines.h"
-
+#include "ArenaTeam.h"
 #include <ace/Singleton.h>
 #include <string>
 #include <map>
@@ -511,14 +511,6 @@ typedef std::multimap<uint32, GossipMenuItems> GossipMenuItemsMap;
 typedef std::pair<GossipMenuItemsMap::const_iterator, GossipMenuItemsMap::const_iterator> GossipMenuItemsMapBounds;
 typedef std::pair<GossipMenuItemsMap::iterator, GossipMenuItemsMap::iterator> GossipMenuItemsMapBoundsNonConst;
 
-struct GuildRewardsEntry
-{
-    uint32 item;
-    uint32 price;
-    uint32 achievement;
-    uint32 standing;
-};
-
 struct QuestPOIPoint
 {
     int32 x;
@@ -622,6 +614,8 @@ class ObjectMgr
 
         typedef UNORDERED_MAP<uint32, Quest*> QuestMap;
 
+        typedef UNORDERED_MAP<uint32, ArenaTeam*> ArenaTeamMap;
+
         typedef UNORDERED_MAP<uint32, AreaTrigger> AreaTriggerMap;
 
         typedef UNORDERED_MAP<uint32, uint32> AreaTriggerScriptMap;
@@ -638,8 +632,6 @@ class ObjectMgr
 
         typedef std::map<uint32, uint32> CharacterConversionMap;
 
-        typedef std::vector <GuildRewardsEntry *> GuildRewardsVector;
-
         Player* GetPlayerByLowGUID(uint32 lowguid) const;
 
         GameObjectTemplate const* GetGameObjectTemplate(uint32 entry);
@@ -652,6 +644,8 @@ class ObjectMgr
         CreatureTemplate const* GetCreatureTemplate(uint32 entry);
         CreatureTemplateContainer const* GetCreatureTemplates() { return &CreatureTemplateStore; }
         CreatureModelInfo const* GetCreatureModelInfo(uint32 modelId);
+        void AddArenaTeam(ArenaTeam* arenaTeam);
+        void RemoveArenaTeam(uint32 Id);
         CreatureModelInfo const* GetCreatureModelRandomGender(uint32* displayID);
         static uint32 ChooseDisplayId(uint32 team, const CreatureTemplate* cinfo, const CreatureData* data = NULL);
         static void ChooseCreatureFlags(const CreatureTemplate* cinfo, uint32& npcflag, uint32& unit_flags, uint32& dynamicflags, const CreatureData* data = NULL);
@@ -710,8 +704,6 @@ class ObjectMgr
             return itr != mQuestTemplates.end() ? itr->second : NULL;
         }
         QuestMap const& GetQuestTemplates() const { return mQuestTemplates; }
-
-        GuildRewardsVector const& GetGuildRewards() { return mGuildRewards; }
 
         uint32 GetQuestForAreaTrigger(uint32 Trigger_ID) const
         {
@@ -894,6 +886,8 @@ class ObjectMgr
         void LoadGameobjects();
         void LoadGameobjectRespawnTimes();
         void LoadItemTemplates();
+        void LoadItemTemplateAddon();
+        void LoadItemScriptNames();
         void LoadItemLocales();
         void LoadItemSetNames();
         void LoadItemSetNameLocales();
@@ -1248,8 +1242,7 @@ class ObjectMgr
         typedef std::set<uint32> GameObjectForQuestSet;
 
         GuildMap            mGuildMap;
-        GuildRewardsVector  mGuildRewards;
-
+        ArenaTeamMap mArenaTeamMap;
         QuestAreaTriggerMap mQuestAreaTriggerMap;
         TavernAreaTriggerSet mTavernAreaTriggerSet;
         GameObjectForQuestSet mGameObjectForQuestSet;

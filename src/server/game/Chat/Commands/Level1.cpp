@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -480,8 +480,8 @@ bool ChatHandler::HandleLookupAreaCommand(const char* args)
         AreaTableEntry const* areaEntry = sAreaStore.LookupEntry (areaflag);
         if (areaEntry)
         {
-            int loc = GetSessionDbcLocale ();
-            std::string name = areaEntry->area_name[loc];
+            int loc = GetSessionDbcLocale();
+            std::string name = areaEntry->area_name;
             if (name.empty())
                 continue;
 
@@ -490,10 +490,10 @@ bool ChatHandler::HandleLookupAreaCommand(const char* args)
                 loc = 0;
                 for (; loc < TOTAL_LOCALES; ++loc)
                 {
-                    if (loc == GetSessionDbcLocale ())
+                    if (loc == GetSessionDbcLocale())
                         continue;
 
-                    name = areaEntry->area_name[loc];
+                    name = areaEntry->area_name;
                     if (name.empty ())
                         continue;
 

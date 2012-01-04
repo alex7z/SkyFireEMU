@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -61,7 +61,7 @@ enum AchievementFlags
     ACHIEVEMENT_FLAG_COUNTER                = 0x00000001,        // Just count statistic (never stop and complete)
     ACHIEVEMENT_FLAG_HIDDEN                 = 0x00000002,        // Not sent to client - internal use only
     ACHIEVEMENT_FLAG_STORE_MAX_VALUE        = 0x00000004,        // Store only max value? used only in "Reach level xx"
-    ACHIEVEMENT_FLAG_SUMM                   = 0x00000008,        // Use summ criteria value from all reqirements (and calculate max value)
+    ACHIEVEMENT_FLAG_SUMM                   = 0x00000008,        // Use summ criteria value from all requirements (and calculate max value)
     ACHIEVEMENT_FLAG_MAX_USED               = 0x00000010,        // Show max criteria (and calculate max value ??)
     ACHIEVEMENT_FLAG_REQ_COUNT              = 0x00000020,        // Use not zero req count (and calculate max value)
     ACHIEVEMENT_FLAG_AVERAGE                = 0x00000040,        // Show as average value (value / time_in_days) depend from other flag (by def use last criteria value)
@@ -72,7 +72,7 @@ enum AchievementFlags
     ACHIEVEMENT_FLAG_REALM_FIRST_GUILD      = 0x00000800,   // first guild on realm done something
     ACHIEVEMENT_FLAG_UNK4                   = 0x00001000,   // as guild group?
     ACHIEVEMENT_FLAG_UNK5                   = 0x00002000,   // as guild group?
-    ACHIEVEMENT_FLAG_GUILD                  = 0x00004000,   //
+    ACHIEVEMENT_FLAG_GUILD_ACHIEVEMENT      = 0x00004000,   //
     ACHIEVEMENT_FLAG_SHOW_GUILD_MEMBERS	    = 0x00008000,   //
     ACHIEVEMENT_FLAG_SHOW_CRITERIA_MEMBERS  = 0x00010000,   //
 };
@@ -81,14 +81,14 @@ enum AchievementFlags
 
 enum AchievementCriteriaCondition
 {
-    ACHIEVEMENT_CRITERIA_CONDITION_NONE         = 0,
-    ACHIEVEMENT_CRITERIA_CONDITION_NO_DEATH     = 1,    // reset progress on death
-    ACHIEVEMENT_CRITERIA_CONDITION_UNK1         = 2,    // only used in "Complete a daily quest every day for five consecutive days"
-    ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP       = 3,    // requires you to be on specific map, reset at change
-    ACHIEVEMENT_CRITERIA_CONDITION_NO_LOSE      = 4,    // only used in "Win 10 arenas without losing"
-    ACHIEVEMENT_CRITERIA_CONDITION_UNK2         = 9,    // unk
-    ACHIEVEMENT_CRITERIA_CONDITION_NOT_IN_GROUP = 10,   // requires the player not to be in group
-    ACHIEVEMENT_CRITERIA_CONDITION_UNK3         = 13,   // unk
+    ACHIEVEMENT_CRITERIA_CONDITION_NONE            = 0,
+    ACHIEVEMENT_CRITERIA_CONDITION_NO_DEATH        = 1,    // reset progress on death
+    ACHIEVEMENT_CRITERIA_CONDITION_UNK1            = 2,    // only used in "Complete a daily quest every day for five consecutive days"
+    ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP          = 3,    // requires you to be on specific map, reset at change
+    ACHIEVEMENT_CRITERIA_CONDITION_NO_LOSE         = 4,    // only used in "Win 10 arenas without losing"
+    ACHIEVEMENT_CRITERIA_CONDITION_NO_SPELL_HIT    = 9,    // requires the player not to be hit by specific spell
+    ACHIEVEMENT_CRITERIA_CONDITION_NOT_IN_GROUP    = 10,   // requires the player not to be in group
+    ACHIEVEMENT_CRITERIA_CONDITION_UNK3            = 13,   // unk
 };
 
 enum AchievementCriteriaFlags
@@ -104,7 +104,7 @@ enum AchievementCriteriaFlags
 enum AchievementCriteriaTimedTypes
 {
     ACHIEVEMENT_TIMED_TYPE_EVENT            = 1,    // Timer is started by internal event with id in timerStartEvent
-    ACHIEVEMENT_TIMED_TYPE_QUEST            = 2,    // Timer is started by acceting quest with entry in timerStartEvent
+    ACHIEVEMENT_TIMED_TYPE_QUEST            = 2,    // Timer is started by accepting quest with entry in timerStartEvent
     ACHIEVEMENT_TIMED_TYPE_SPELL_CASTER     = 5,    // Timer is started by casting a spell with entry in timerStartEvent
     ACHIEVEMENT_TIMED_TYPE_SPELL_TARGET     = 6,    // Timer is started by being target of spell with entry in timerStartEvent
     ACHIEVEMENT_TIMED_TYPE_CREATURE         = 7,    // Timer is started by killing creature with entry in timerStartEvent
@@ -252,8 +252,8 @@ enum AchievementCriteriaMoreReqType
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_ITEM_LEVEL             = 3,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_CREATURE_ID            = 4,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_TARGET_TYPE			  = 5,
-    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_SPELL                  = 8,
-    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_SPELL_ON_TARGET        = 10,
+    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_AURA                   = 8,
+    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_AURA_ON_TARGET         = 10,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_MOUNTED				  = 11,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_ITEM_QUALITY_EQUIPPED  = 14,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_ITEM_QUALITY_LOOTED    = 15,
@@ -261,9 +261,10 @@ enum AchievementCriteriaMoreReqType
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_AREA_ID2               = 18,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_RAID_DIFFICULTY        = 20,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_ARENA_TYPE             = 24,
+    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_PLAYER_RACE            = 25,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_PLAYER_CLASS           = 26,
-    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_PLAYER_RACE            = 27,
-    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_PLAYER_CLASS2          = 28,
+    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_TARGET_RACE            = 27,
+    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_TARGET_CLASS           = 28,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_NUM_PLAYERS_IN_ZONE    = 29,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_CREATURE_TYPE          = 30,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_MAP_ID                 = 32,
@@ -272,8 +273,9 @@ enum AchievementCriteriaMoreReqType
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_PLAYER_TITLE           = 38,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_PLAYER_LEVEL           = 39,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_PLAYER_LEVEL2          = 40,
-    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_AREA_ID3               = 41,
-    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_HEALTH_UNDER_PCT	      = 46,
+    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_ZONE_ID                = 41,
+    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_T_HEALTH_UNDER_PCT	  = 46, // target
+    ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_REQUIRES_GUILD_GROUP   = 61,
     ACHIEVEMENT_CRITERIA_MORE_REQ_TYPE_GUILD_REP              = 62,
 };
 
@@ -484,6 +486,7 @@ enum VehicleSeatFlagsB
     VEHICLE_SEAT_FLAG_B_EJECTABLE                = 0x00000020,           // ejectable
     VEHICLE_SEAT_FLAG_B_USABLE_FORCED_2          = 0x00000040,
     VEHICLE_SEAT_FLAG_B_USABLE_FORCED_3          = 0x00000100,
+    VEHICLE_SEAT_FLAG_B_USABLE_FORCED_4          = 0x02000000,
     VEHICLE_SEAT_FLAG_B_VEHICLE_PLAYERFRAME_UI   = 0x80000000,           // Lua_UnitHasVehiclePlayerFrameUI - actually checked for flagsb &~ 0x80000000
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -48,6 +48,8 @@ enum WorldDatabaseStatements
     WORLD_LOAD_CRETEXT,
     WORLD_LOAD_SMART_SCRIPTS,
     WORLD_LOAD_SMARTAI_WP,
+    WORLD_DEL_GAMEOBJECT,
+    WORLD_DEL_EVENT_GAMEOBJECT,
 
     MAX_WORLDDATABASE_STATEMENTS,
 };

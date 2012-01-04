@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -52,7 +52,7 @@ void Guild::SendCommandResult(WorldSession* session, GuildCommandType type, Guil
     data << uint32(errCode);
     session->SendPacket(&data);
 
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (SMSG_GUILD_COMMAND_RESULT)");
+    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_COMMAND_RESULT)");
 }
 
 void Guild::SendSaveEmblemResult(WorldSession* session, GuildEmblemError errCode)
@@ -61,7 +61,7 @@ void Guild::SendSaveEmblemResult(WorldSession* session, GuildEmblemError errCode
     data << uint32(errCode);
     session->SendPacket(&data);
 
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (MSG_SAVE_GUILD_EMBLEM)");
+    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (MSG_SAVE_GUILD_EMBLEM)");
 }
 
 // LogHolder
@@ -592,12 +592,12 @@ bool Guild::Member::LoadFromDB(Field* fields)
         m_bankRemaining[i].value      = fields[8 + i * 2].GetUInt32();
     }
 
-    SetStats(fields[19].GetString(),
-             fields[20].GetUInt8(),
-             fields[21].GetUInt8(),
-             fields[22].GetUInt16(),
-             fields[23].GetUInt32());
-    m_logoutTime    = fields[24].GetUInt32();
+    SetStats(fields[23].GetString(),
+             fields[24].GetUInt8(),
+             fields[25].GetUInt8(),
+             fields[26].GetUInt16(),
+             fields[27].GetUInt32());
+    m_logoutTime    = fields[28].GetUInt32();
 
     if (!CheckStats())
         return false;
@@ -607,6 +607,7 @@ bool Guild::Member::LoadFromDB(Field* fields)
         sLog->outError("Player (GUID: %u) has broken zone-data", GUID_LOPART(m_guid));
         m_zoneId = Player::GetZoneIdFromDB(m_guid);
     }
+    ResetFlags();
     return true;
 }
 
@@ -1045,7 +1046,7 @@ InventoryResult Guild::BankMoveItemData::CanStore(Item* pItem, bool swap)
 }
 
 // Guild
-Guild::Guild() : m_id(0), m_leaderGuid(0), m_createdDate(0), m_accountsNumber(0), m_bankMoney(0), m_eventLog(NULL), m_lastXPSave(0)
+Guild::Guild() : m_id(0), m_leaderGuid(0), m_createdDate(0), m_accountsNumber(0), m_bankMoney(0), m_eventLog(NULL), m_lastXPSave(0), m_achievementMgr(this)
 {
     memset(&m_bankEventLog, 0, (GUILD_BANK_MAX_TABS + 1) * sizeof(LogHolder*));
 }
@@ -1235,6 +1236,7 @@ void Guild::OnPlayerStatusChange(Player* player, uint32 flag, bool state)
             member->AddFlag(flag);
         else member->RemFlag(flag);
     }
+    HandleRoster();
 }
 
 // HANDLE CLIENT COMMANDS
@@ -1246,14 +1248,14 @@ void Guild::HandleRoster(WorldSession* session /*= NULL*/)
     data << uint32(m_members.size());
 
     // Packed uint8 - each bit resembles some flag.
-    uint32 totalBytesToSend = uint32(uint32(m_members.size()) / uint32(8)) + 1;
-    for(uint32 i = 0; i < totalBytesToSend; ++i)
+    uint32 totalBytesToSend = uint32(ceil(float(m_members.size()) / 8.0f));
+    for (uint32 i = 0; i < totalBytesToSend; ++i)
         data << uint8(0); //unk
 
     for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
         data << itr->second->GetPublicNote();
     for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
-        data << uint64(0); // unk uint64
+        data << uint64(0); // week activity
 
     data << m_info;
 
@@ -1261,23 +1263,17 @@ void Guild::HandleRoster(WorldSession* session /*= NULL*/)
         data << uint8(itr->second->GetFlags()); // GUILD_MEMBER_FLAGS enum
 
     for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
-    {
-        // Zone ID: Use cached value as zone id does get updated
-        data << uint32(itr->second->GetZoneId());
-    }
+        data << uint32(itr->second->GetZoneId()); // Zone ID: Use cached value as zone id does get updated
 
     for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
-    {
-        // Achievement Points
-        data << uint32(itr->second->GetAchievementPoints());
-    }
+        data << uint32(itr->second->GetAchievementPoints()); // Achievement Points
 
     for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
         data << itr->second->GetOfficerNote();
 
     for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
         //data << uint64(itr->second->GetGUID()); // unk uint64
-        data << uint64(0);
+        data << uint64(0); // total activity
 
     for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
         data << uint8(0); // unk
@@ -1311,7 +1307,7 @@ void Guild::HandleRoster(WorldSession* session /*= NULL*/)
     for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
     {
         // two primary professions (todo)
-        for(int i = 0; i < 2; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             data << uint32(0); // profession title
             data << uint32(0); // profession level?
@@ -1320,13 +1316,14 @@ void Guild::HandleRoster(WorldSession* session /*= NULL*/)
     }
 
     for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
-        data << uint32(0); // unk
+        data << uint32(0); // remaining guild rep
 
     for (Members::const_iterator itr = m_members.begin(); itr != m_members.end(); ++itr)
     {
         if(itr->second->IsOnline())
             data << float(0); // unk
-        else data << float(float(::time(NULL) - itr->second->GetLogoutTime()) / DAY);
+        else
+            data << float(float(::time(NULL) - itr->second->GetLogoutTime()) / DAY);
     }
 
     if (session)
@@ -1337,16 +1334,16 @@ void Guild::HandleRoster(WorldSession* session /*= NULL*/)
     SendGuildRankInfo(session);
 
    // This is to make client refresh the list
-   SendUpdateRoster(session);
+   //SendUpdateRoster(session);
 
-   sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (SMSG_GUILD_ROSTER)");
+   sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_ROSTER)");
 }
 
 void Guild::SendGuildRankInfo(WorldSession* session)
 {
     WorldPacket data7(SMSG_GUILD_RANK);
     data7 << uint32(_GetRanksSize());
-    for(uint32 i = 0; i < _GetRanksSize(); i++)
+    for (uint32 i = 0; i < _GetRanksSize(); i++)
     {
         //data7 << uint32(m_ranks[i].GetId());
         data7 << uint32(i);
@@ -1354,12 +1351,12 @@ void Guild::SendGuildRankInfo(WorldSession* session)
         data7 << m_ranks[i].GetName();
         data7 << uint32(m_ranks[i].GetRights());
 
-        for(int j = 0; j < GUILD_BANK_MAX_TABS; j++)
-            data7 << uint32(0xFFFFFFFF);
-        for(int j = 0; j < GUILD_BANK_MAX_TABS; j++)
-            data7 << uint32(0xFFFFFFFF);
+        for (int j = 0; j < GUILD_BANK_MAX_TABS; j++)
+            data7 << uint32(m_ranks[i].GetBankTabRights(j));
+        for (int j = 0; j < GUILD_BANK_MAX_TABS; j++)
+            data7 << uint32(m_ranks[i].GetBankTabSlotsPerDay(j));
 
-        data7 << uint32(0xFFFFFFFF); // GuildBankRightsAndSlots
+        data7 << uint32(m_ranks[i].GetBankMoneyPerDay()); // GuildBankRightsAndSlots
     }
 
     if (session)
@@ -1401,10 +1398,11 @@ void Guild::HandleQuery(WorldSession* session)
     }
 
     m_emblemInfo.WritePacket(data);
-    data << uint32(7);                                                // Something new in WotLK
+    data << uint32(_GetRanksSize());                                                // Something new in WotLK
 
     session->SendPacket(&data);
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (SMSG_GUILD_QUERY_RESPONSE)");
+    HandleRoster(session);
+    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_QUERY_RESPONSE)");
 }
 
 void Guild::HandleSetMOTD(WorldSession* session, const std::string& motd)
@@ -1428,6 +1426,7 @@ void Guild::HandleSetMOTD(WorldSession* session, const std::string& motd)
 
         _BroadcastEvent(GE_MOTD, 0, motd.c_str());
     }
+    HandleRoster();
 }
 
 void Guild::HandleSetInfo(WorldSession* session, const std::string& info)
@@ -1449,6 +1448,7 @@ void Guild::HandleSetInfo(WorldSession* session, const std::string& info)
         stmt->setUInt32(1, m_id);
         CharacterDatabase.Execute(stmt);
     }
+    HandleRoster();
 }
 
 void Guild::HandleSetEmblem(WorldSession* session, const EmblemInfo& emblemInfo)
@@ -1493,6 +1493,7 @@ void Guild::HandleSetLeader(WorldSession* session, const std::string& name)
     }
     else
         SendCommandResult(session, GUILD_INVITE_S, ERR_GUILD_PERMISSIONS);
+    HandleRoster();
 }
 
 void Guild::HandleSetBankTabInfo(WorldSession* session, uint8 tabId, const std::string& name, const std::string& icon)
@@ -1503,6 +1504,7 @@ void Guild::HandleSetBankTabInfo(WorldSession* session, uint8 tabId, const std::
         SendBankTabsInfo(session);
         _SendBankContent(session, tabId);
     }
+    HandleRoster();
 }
 
 void Guild::HandleSetMemberNote(WorldSession* session, uint64 guid, const std::string& note, bool officer)
@@ -1625,7 +1627,8 @@ void Guild::HandleInviteMember(WorldSession* session, const std::string& name)
     data << std::string(GetName());
     pInvitee->GetSession()->SendPacket(&data);
 
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (SMSG_GUILD_INVITE)");
+    HandleRoster();
+    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_INVITE)");
 }
 
 void Guild::HandleAcceptMember(WorldSession* session)
@@ -1641,13 +1644,14 @@ void Guild::HandleAcceptMember(WorldSession* session)
         player->SetUInt32Value(PLAYER_GUILDLEVEL, uint32(GetLevel()));
         player->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_GLEVEL_ENABLED);
         /// Learn perks to him
-        for(int i = 0; i < GetLevel()-1; ++i)
+        for (int i = 0; i < GetLevel()-1; ++i)
             if(const GuildPerksEntry* perk = sGuildPerksStore.LookupEntry(i))
                 player->learnSpell(perk->SpellId, true);
 
         _LogEvent(GUILD_EVENT_LOG_JOIN_GUILD, player->GetGUIDLow());
         _BroadcastEvent(GE_JOINED, player->GetGUID(), player->GetName());
     }
+    HandleRoster();
 }
 
 void Guild::HandleLeaveMember(WorldSession* session)
@@ -1672,6 +1676,7 @@ void Guild::HandleLeaveMember(WorldSession* session)
 
         SendCommandResult(session, GUILD_QUIT_S, ERR_PLAYER_NO_MORE_IN_GUILD, m_name);
     }
+    HandleRoster();
 }
 
 void Guild::HandleRemoveMember(WorldSession* session, uint64 guid)
@@ -1699,6 +1704,7 @@ void Guild::HandleRemoveMember(WorldSession* session, uint64 guid)
             _BroadcastEvent(GE_REMOVED, 0, name.c_str(), player->GetName());
         }
     }
+    HandleRoster();
 }
 
 void Guild::HandleUpdateMemberRank(WorldSession* session, uint64 guid, bool demote)
@@ -1833,6 +1839,7 @@ void Guild::HandleMemberDepositMoney(WorldSession* session, uint32 amount)
     SendBankTabsInfo(session);
     _SendBankContent(session, 0);
     _SendBankMoneyUpdate(session);
+    HandleRoster();
 }
 
 bool Guild::HandleMemberWithdrawMoney(WorldSession* session, uint32 amount, bool repair)
@@ -1881,6 +1888,7 @@ bool Guild::HandleMemberWithdrawMoney(WorldSession* session, uint32 amount, bool
         _SendBankContent(session, 0);
         _SendBankMoneyUpdate(session);
     }
+    HandleRoster();
     return true;
 }
 
@@ -1894,6 +1902,7 @@ void Guild::HandleMemberLogout(WorldSession* session)
         member->ResetFlags();
     }
     _BroadcastEvent(GE_SIGNED_OFF, player->GetGUID(), player->GetName());
+    HandleRoster();
 }
 
 void Guild::HandleDisband(WorldSession* session)
@@ -1918,7 +1927,7 @@ void Guild::SendInfo(WorldSession* session) const
     data << m_accountsNumber;                       // Number of accounts
 
     session->SendPacket(&data);
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (SMSG_GUILD_INFO)");
+    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_INFO)");
 }
 
 void Guild::SendEventLog(WorldSession* session) const
@@ -1968,7 +1977,7 @@ void Guild::SendBankTabsInfo(WorldSession* session) const
     data << uint8(0);                                       // Do not send tab content
     session->SendPacket(&data);
 
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (SMSG_GUILD_BANK_LIST)");
+    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_BANK_LIST)");
 }
 
 void Guild::SendBankTabText(WorldSession* session, uint8 tabId) const
@@ -1998,7 +2007,7 @@ void Guild::SendPermissions(WorldSession* session) const
 
     WorldPacket data7(SMSG_GUILD_RANK);
     data7 << uint32(_GetRanksSize());
-    for(uint32 i = 0; i < _GetRanksSize(); i++)
+    for (uint32 i = 0; i < _GetRanksSize(); i++)
     {
         //data7 << uint32(m_ranks[i].GetId());
         data7 << uint32(i);
@@ -2006,10 +2015,10 @@ void Guild::SendPermissions(WorldSession* session) const
         data7 << m_ranks[i].GetName();
         data7 << uint32(m_ranks[i].GetRights());
 
-        for(int j = 0; j < GUILD_BANK_MAX_TABS; j++)
+        for (int j = 0; j < GUILD_BANK_MAX_TABS; j++)
             data7 << uint32(m_ranks[i].GetBankMoneyPerDay());
             //data7 << uint32(0xFFFFFFFF);
-        for(int j = 0; j < GUILD_BANK_MAX_TABS; j++)
+        for (int j = 0; j < GUILD_BANK_MAX_TABS; j++)
             data7 << uint32(m_ranks[i].GetRights());
             //data7 << uint32(0xFFFFFFFF);
 
@@ -2047,6 +2056,7 @@ void Guild::SendLoginInfo(WorldSession* session)
         member->SetStats(session->GetPlayer());
         member->AddFlag(GUILD_MEMBER_FLAG_ONLINE);
     }
+    HandleRoster();
 }
 
 // Loading methods
@@ -2083,6 +2093,7 @@ bool Guild::LoadFromDB(Field* fields)
     m_nextLevelXP = sObjectMgr->GetXPForGuildLevel(m_level);
 
     _CreateLogHolders();
+    m_achievementMgr.LoadFromDB();
     return true;
 }
 
@@ -2332,7 +2343,7 @@ bool Guild::AddMember(uint64 guid, uint8 rankId)
         member->SetStats(player);
 
         // Learn our perks to him
-        for(int i = 0; i < m_level; ++i)
+        for (int i = 0; i < m_level; ++i)
             if(const GuildPerksEntry* perk = sGuildPerksStore.LookupEntry(i))
                 player->learnSpell(perk->SpellId, true);
     }
@@ -2375,6 +2386,8 @@ bool Guild::AddMember(uint64 guid, uint8 rankId)
         player->SetInGuild(m_id);
         player->SetRank(rankId);
         player->SetGuildIdInvited(0);
+        player->SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_GLEVEL_ENABLED);
+        player->SetUInt32Value(PLAYER_GUILDLEVEL, uint32(GetLevel()));
     }
 
     _UpdateAccountsNumber();
@@ -2385,6 +2398,8 @@ bool Guild::AddMember(uint64 guid, uint8 rankId)
     if (player)
         player->SetReputation(1168, 0);
 
+    HandleRoster();
+    m_achievementMgr.SendAllAchievementData();
     return true;
 }
 
@@ -2910,7 +2925,7 @@ void Guild::_SendBankContent(WorldSession* session, uint8 tabId) const
 
             session->SendPacket(&data);
 
-            sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (SMSG_GUILD_BANK_LIST)");
+            sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_BANK_LIST)");
         }
 }
 
@@ -2925,7 +2940,7 @@ void Guild::_SendBankMoneyUpdate(WorldSession* session) const
     data << uint8(0);                                       // No items
     BroadcastPacket(&data);
 
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (SMSG_GUILD_BANK_LIST)");
+    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_BANK_LIST)");
 }
 
 void Guild::_SendBankContentUpdate(MoveItemData* pSrc, MoveItemData* pDest) const
@@ -2985,7 +3000,7 @@ void Guild::_SendBankContentUpdate(uint8 tabId, SlotIds slots) const
                     player->GetSession()->SendPacket(&data);
                 }
 
-        sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent (SMSG_GUILD_BANK_LIST)");
+        sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_BANK_LIST)");
     }
 }
 
@@ -3009,7 +3024,7 @@ void Guild::_BroadcastEvent(GuildEvents guildEvent, uint64 guid, const char* par
 
     BroadcastPacket(&data);
 
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent SMSG_GUILD_EVENT");
+    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent SMSG_GUILD_EVENT");
 }
 
 // Guild Advancement
@@ -3089,6 +3104,7 @@ void Guild::LevelUp()
             if (spellId)
                player->learnSpell(spellId, true);
         }
+    GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_REACH_GUILD_LEVEL, NULL);
 }
 
 void Guild::SaveXP()

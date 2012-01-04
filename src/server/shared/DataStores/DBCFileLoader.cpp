@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -139,10 +139,10 @@ uint32 DBCFileLoader::GetFormatRecordSize(const char * format, int32* index_pos)
         {
             case FT_FLOAT:
             case FT_INT:
-                recordsize+=4;
+                recordsize += 4;
                 break;
             case FT_STRING:
-                recordsize+=sizeof(char*);
+                recordsize += sizeof(char*);
                 break;
             case FT_SORT:
                 i=x;
@@ -161,16 +161,6 @@ uint32 DBCFileLoader::GetFormatRecordSize(const char * format, int32* index_pos)
         *index_pos = i;
 
     return recordsize;
-}
-
-uint32 DBCFileLoader::GetFormatStringsFields(const char * format)
-{
-    uint32 stringfields = 0;
-    for (uint32 x=0; format[x]; ++x)
-        if (format[x] == FT_STRING)
-            ++stringfields;
-
-    return stringfields;
 }
 
 char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**& indexTable, uint32 sqlRecordCount, uint32 sqlHighestIndex, char*& sqlDataTable)
@@ -235,21 +225,31 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
             switch (format[x])
             {
                 case FT_FLOAT:
-                    *((float*)(&dataTable[offset]))=getRecord(y).getFloat(x);
-                    offset+=4;
+                    *((float*)(&dataTable[offset])) = getRecord(y).getFloat(x);
+                    offset += sizeof(float);
                     break;
                 case FT_IND:
                 case FT_INT:
-                    *((uint32*)(&dataTable[offset]))=getRecord(y).getUInt(x);
-                    offset+=4;
+                    *((uint32*)(&dataTable[offset])) = getRecord(y).getUInt(x);
+                    offset += sizeof(uint32);
                     break;
                 case FT_BYTE:
-                    *((uint8*)(&dataTable[offset]))=getRecord(y).getUInt8(x);
-                    offset+=1;
+                    *((uint8*)(&dataTable[offset])) = getRecord(y).getUInt8(x);
+                    offset += sizeof(uint8);
                     break;
                 case FT_STRING:
-                    *((char**)(&dataTable[offset]))=NULL;   // will be replaces non-empty or "" strings in AutoProduceStrings
-                    offset+=sizeof(char*);
+                    *((char**)(&dataTable[offset])) = NULL;   // will replace non-empty or "" strings in AutoProduceStrings
+                    offset += sizeof(char*);
+                    break;
+                case FT_LOGIC:
+                    ASSERT(false && "Attempted to load DBC files that do not have field types that match what is in the core. Check DBCfmt.h or your DBC files.");
+                    break;
+                case FT_NA:
+                case FT_NA_BYTE:
+                case FT_SORT:
+                    break;
+                default:
+                    ASSERT(false && "Unknown field format character in DBCfmt.h");
                     break;
             }
         }
@@ -260,108 +260,55 @@ char* DBCFileLoader::AutoProduceData(const char* format, uint32& records, char**
     return dataTable;
 }
 
-char* DBCFileLoader::AutoProduceStringsArrayHolders(const char* format, char* dataTable)
+char* DBCFileLoader::AutoProduceStrings(const char* format, char* dataTable)
 {
     if (strlen(format) != fieldCount)
         return NULL;
 
-    // we store flat holders pool as single memory block
-    size_t stringFields = GetFormatStringsFields(format);
-    // each string field at load have array of string for each locale
-    size_t stringHolderSize = sizeof(char*) * TOTAL_LOCALES;
-    size_t stringHoldersRecordPoolSize = stringFields * stringHolderSize;
-    size_t stringHoldersPoolSize = stringHoldersRecordPoolSize * recordCount;
+    char* stringPool = new char[stringSize];
+    memcpy(stringPool, stringTable, stringSize);
 
-    char* stringHoldersPool = new char[stringHoldersPoolSize];
+    uint32 offset = 0;
 
-    for (size_t i = 0; i < stringHoldersPoolSize / sizeof(char*); ++i)
-        ((char const**)stringHoldersPool)[i] = NULL;
-
-    uint32 offset=0;
-
-    // assign string holders to string field slots
-    for (uint32 y = 0; y < recordCount; y++)
+    for (uint32 y = 0; y < recordCount; ++y)
     {
-        uint32 stringFieldNum = 0;
-
-        for (uint32 x = 0; x < fieldCount; x++)
-            switch (format[x])
+        for (uint32 x = 0; x < fieldCount; ++x)
         {
+            switch (format[x])
+            {
             case FT_FLOAT:
+                offset += sizeof(float);
+                break;
             case FT_IND:
             case FT_INT:
-                offset += 4;
+                offset += sizeof(uint32);
                 break;
             case FT_BYTE:
-                offset += 1;
+                offset += sizeof(uint8);
                 break;
             case FT_STRING:
                 {
-                    // init dbc string field slots by pointers to string holders
-                    char const*** slot = (char const***)(&dataTable[offset]);
-                    *slot = (char const**)(&stringHoldersPool[stringHoldersRecordPoolSize * y + stringHolderSize*stringFieldNum]);
-                    ++stringFieldNum;
+                    // fill only not filled entries
+                    char** slot = (char**)(&dataTable[offset]);
+                    if (!*slot || !**slot)
+                    {
+                        const char * st = getRecord(y).getString(x);
+                        *slot=stringPool+(st-(const char*)stringTable);
+                    }
                     offset += sizeof(char*);
                     break;
                 }
+            case FT_LOGIC:
+                ASSERT(false && "Attempted to load DBC files that does not have field types that match what is in the core. Check DBCfmt.h or your DBC files.");
+                break;
             case FT_NA:
             case FT_NA_BYTE:
             case FT_SORT:
                 break;
             default:
-                assert(false && "unknown format character");
-        }
-    }
-
-    //send as char* for store in char* pool list for free at unload
-    return stringHoldersPool;
-}
-
-char* DBCFileLoader::AutoProduceStrings(const char* format, char* dataTable, uint8 locale)
-{
-    if (strlen(format)!=fieldCount)
-        return NULL;
-
-    struct DBCStringHolder
-    {
-        char const* Strings[TOTAL_LOCALES];
-    };
-
-    char* stringPool = new char[stringSize];
-    memcpy(stringPool, stringTable, stringSize);
-
-    uint32 offset=0;
-
-    for (uint32 y =0; y<recordCount; y++)
-    {
-        for (uint32 x=0; x<fieldCount; x++)
-            switch (format[x])
-        {
-            case FT_FLOAT:
-            case FT_IND:
-            case FT_INT:
-                offset+=4;
+                ASSERT(false && "Unknown field format character in DBCfmt.h");
                 break;
-            case FT_BYTE:
-                offset+=1;
-                break;
-            case FT_STRING:
-                DBCStringHolder** slot = (DBCStringHolder**)(&dataTable[offset]);
-                if (*slot) // ensure the strings array holder is filled
-                {
-                    const char * st = getRecord(y).getString(x);
-                    if (locale == 0)
-                    {
-                        // default locale, fill all unfilled locale entries
-                        for (uint8 loc = 0; loc < TOTAL_LOCALES; loc++)
-                            if (!(*slot)->Strings[loc])
-                                (*slot)->Strings[loc] = stringPool+(st-(const char*)stringTable);
-                    }
-                    else // specific locale, overwrite locale entry
-                        (*slot)->Strings[locale] = stringPool+(st-(const char*)stringTable);
-                }
-                offset+=sizeof(char*);
-                break;
+            }
         }
     }
 

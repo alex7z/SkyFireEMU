@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -155,8 +155,8 @@ class ChatHandler
         bool HandleCastTargetCommand(const char *args);
         bool HandleCastDestCommand(const char *args);
 
-        bool HandleCharacterCustomizeCommand(const char * args);
-        bool HandleCharacterChangeFactionCommand(const char * args);
+        bool HandleCharacterCustomizeCommand(const char* args);
+        bool HandleCharacterChangeFactionCommand(const char* args);
         bool HandleCharacterChangeRaceCommand(const char * args);
         bool HandleCharacterDeletedDeleteCommand(const char* args);
         bool HandleCharacterDeletedListCommand(const char* args);
@@ -164,7 +164,7 @@ class ChatHandler
         bool HandleCharacterDeletedOldCommand(const char* args);
         bool HandleCharacterEraseCommand(const char* args);
         bool HandleCharacterLevelCommand(const char* args);
-        bool HandleCharacterRenameCommand(const char * args);
+        bool HandleCharacterRenameCommand(const char* args);
         bool HandleCharacterReputationCommand(const char* args);
         bool HandleCharacterTitlesCommand(const char* args);
 
@@ -216,9 +216,9 @@ class ChatHandler
         bool HandleResetAllCommand(const char * args);
         bool HandleResetHonorCommand(const char * args);
         bool HandleResetLevelCommand(const char * args);
-        bool HandleResetSpellsCommand(const char * args);
+        bool HandleResetSpellsCommand(const char* args);
         bool HandleResetStatsCommand(const char * args);
-        bool HandleResetTalentsCommand(const char * args);
+        bool HandleResetTalentsCommand(const char* args);
 
         bool HandleSendItemsCommand(const char* args);
         bool HandleSendMailCommand(const char* args);
@@ -356,7 +356,7 @@ class ChatHandler
         bool HandleBanHelper(BanMode mode, char const* args);
         bool HandleBanInfoHelper(uint32 accountid, char const* accountname);
         bool HandleUnBanHelper(BanMode mode, char const* args);
-        void HandleCharacterLevel(Player* player, uint64 player_guid, uint32 oldlevel, uint32 newlevel);
+        void HandleCharacterLevel(Player* player, uint64 playerGuid, uint32 oldLevel, uint32 newLevel);
         void HandleLearnSkillRecipesHelper(Player* player, uint32 skill_id);
 
         // Stores informations about a deleted character

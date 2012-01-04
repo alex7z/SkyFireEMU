@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -847,7 +847,7 @@ bool ChatHandler::HandleLookupItemSetCommand(const char *args)
         if (set)
         {
             int loc = GetSessionDbcLocale();
-            std::string name = set->name[loc];
+            std::string name = set->name;
             if (name.empty())
                 continue;
 
@@ -920,7 +920,7 @@ bool ChatHandler::HandleLookupSkillCommand(const char *args)
         if (skillInfo)
         {
             int loc = GetSessionDbcLocale();
-            std::string name = skillInfo->name[loc];
+            std::string name = skillInfo->name;
             if (name.empty())
                 continue;
 
@@ -1007,7 +1007,7 @@ bool ChatHandler::HandleLookupSpellCommand(const char *args)
         if (spellInfo)
         {
             int loc = GetSessionDbcLocale();
-            std::string name = spellInfo->SpellName[loc];
+            std::string name = spellInfo->SpellName;
             if (name.empty())
                 continue;
 
@@ -1394,7 +1394,7 @@ bool ChatHandler::HandleLookupFactionCommand(const char *args)
             FactionState const* repState = target ? target->GetReputationMgr().GetState(factionEntry) : NULL;
 
             int loc = GetSessionDbcLocale();
-            std::string name = factionEntry->name[loc];
+            std::string name = factionEntry->name;
             if (name.empty())
                 continue;
 
@@ -1492,7 +1492,7 @@ bool ChatHandler::HandleLookupTaxiNodeCommand(const char * args)
         if (nodeEntry)
         {
             int loc = GetSessionDbcLocale();
-            std::string name = nodeEntry->name[loc];
+            std::string name = nodeEntry->name;
             if (name.empty())
                 continue;
 
@@ -2178,28 +2178,33 @@ bool ChatHandler::HandleHoverCommand(const char *args)
     return true;
 }
 
-void ChatHandler::HandleCharacterLevel(Player* player, uint64 player_guid, uint32 oldlevel, uint32 newlevel)
+void ChatHandler::HandleCharacterLevel(Player* player, uint64 playerGuid, uint32 oldLevel, uint32 newLevel)
 {
     if (player)
     {
-        player->GiveLevel(newlevel);
+        player->GiveLevel(newLevel);
         player->InitTalentForLevel();
         player->SetUInt32Value(PLAYER_XP, 0);
 
         if (needReportToTarget(player))
         {
-            if (oldlevel == newlevel)
+            if (oldLevel == newLevel)
                 ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_PROGRESS_RESET, GetNameLink().c_str());
-            else if (oldlevel < newlevel)
-                ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_UP, GetNameLink().c_str(), newlevel);
+            else if (oldLevel < newLevel)
+                ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_UP, GetNameLink().c_str(), newLevel);
             else                                                // if (oldlevel > newlevel)
-                ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_DOWN, GetNameLink().c_str(), newlevel);
+                ChatHandler(player).PSendSysMessage(LANG_YOURS_LEVEL_DOWN, GetNameLink().c_str(), newLevel);
         }
     }
     else
     {
-        // update level and XP at level, all other will be updated at loading
-        CharacterDatabase.PExecute("UPDATE characters SET level = '%u', xp = 0 WHERE guid = '%u'", newlevel, GUID_LOPART(player_guid));
+        // Update level and reset XP, everything else will be updated at login
+        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPDATE_LEVEL);
+
+        stmt->setUInt8(0, uint8(newLevel));
+        stmt->setUInt32(1, GUID_LOPART(playerGuid));
+
+        CharacterDatabase.Execute(stmt);
     }
 }
 
@@ -2416,7 +2421,7 @@ bool ChatHandler::HandleListAurasCommand (const char * /*args*/)
 
         AuraApplication const* aurApp = itr->second;
         Aura const* aura = aurApp->GetBase();
-        char const* name = aura->GetSpellInfo()->SpellName[GetSessionDbcLocale()];
+        char const* name = aura->GetSpellInfo()->SpellName;
 
         std::ostringstream ss_name;
         ss_name << "|cffffffff|Hspell:" << aura->GetId() << "|h[" << name << "]|h|r";
@@ -2563,12 +2568,12 @@ bool ChatHandler::HandleResetStatsCommand(const char * args)
     return true;
 }
 
-bool ChatHandler::HandleResetSpellsCommand(const char * args)
+bool ChatHandler::HandleResetSpellsCommand(const char* args)
 {
     Player* target;
-    uint64 target_guid;
-    std::string target_name;
-    if (!extractPlayerTarget((char*)args, &target, &target_guid, &target_name))
+    uint64 targetGuid;
+    std::string targetName;
+    if (!extractPlayerTarget((char*)args, &target, &targetGuid, &targetName))
         return false;
 
     if (target)
@@ -2581,19 +2586,25 @@ bool ChatHandler::HandleResetSpellsCommand(const char * args)
     }
     else
     {
-        CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '%u' WHERE guid = '%u'", uint32(AT_LOGIN_RESET_SPELLS), GUID_LOPART(target_guid));
-        PSendSysMessage(LANG_RESET_SPELLS_OFFLINE, target_name.c_str());
+        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPDATE_AT_LOGIN_FLAG);
+
+        stmt->setUInt16(0, uint16(AT_LOGIN_RESET_SPELLS));
+        stmt->setUInt32(1, GUID_LOPART(targetGuid));
+
+        CharacterDatabase.Execute(stmt);
+
+        PSendSysMessage(LANG_RESET_SPELLS_OFFLINE, targetName.c_str());
     }
 
     return true;
 }
 
-bool ChatHandler::HandleResetTalentsCommand(const char * args)
+bool ChatHandler::HandleResetTalentsCommand(const char* args)
 {
     Player* target;
-    uint64 target_guid;
-    std::string target_name;
-    if (!extractPlayerTarget((char*)args, &target, &target_guid, &target_name))
+    uint64 targetGuid;
+    std::string targetName;
+    if (!extractPlayerTarget((char*)args, &target, &targetGuid, &targetName))
     {
         // Try reset talents as Hunter Pet
         Creature* creature = getSelectedCreature();
@@ -2631,11 +2642,16 @@ bool ChatHandler::HandleResetTalentsCommand(const char * args)
             target->SendTalentsInfoData(true);
         return true;
     }
-    else if (target_guid)
+    else if (targetGuid)
     {
-        uint32 at_flags = AT_LOGIN_NONE | AT_LOGIN_RESET_PET_TALENTS;
-        CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '%u' WHERE guid = '%u'", at_flags, GUID_LOPART(target_guid));
-        std::string nameLink = playerLink(target_name);
+        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPDATE_AT_LOGIN_FLAG);
+
+        stmt->setUInt16(0, uint16(AT_LOGIN_NONE | AT_LOGIN_RESET_PET_TALENTS));
+        stmt->setUInt32(1, GUID_LOPART(targetGuid));
+
+        CharacterDatabase.Execute(stmt);
+
+        std::string nameLink = playerLink(targetName);
         PSendSysMessage(LANG_RESET_TALENTS_OFFLINE, nameLink.c_str());
         return true;
     }
@@ -2676,7 +2692,11 @@ bool ChatHandler::HandleResetAllCommand(const char * args)
         return false;
     }
 
-    CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '%u' WHERE (at_login & '%u') = '0'", atLogin, atLogin);
+    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPDATE_ALL_AT_LOGIN_FLAGS);
+
+    stmt->setUInt16(0, uint16(atLogin));
+
+    CharacterDatabase.Execute(stmt);
 
     TRINITY_READ_GUARD(HashMapHolder<Player>::LockType, *HashMapHolder<Player>::GetLock());
     HashMapHolder<Player>::MapType const& plist = sObjectAccessor->GetPlayers();
@@ -3281,7 +3301,8 @@ bool ChatHandler::HandleBanListCharacterCommand(const char *args)
 
 bool ChatHandler::HandleBanListAccountCommand(const char *args)
 {
-    LoginDatabase.Execute("DELETE FROM ip_banned WHERE unbandate <= UNIX_TIMESTAMP() AND unbandate<>bandate");
+    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_DEL_OLD_BANS);
+    LoginDatabase.Execute(stmt);
 
     char* cFilter = strtok((char*)args, " ");
     std::string filter = cFilter ? cFilter : "";
@@ -3386,7 +3407,8 @@ bool ChatHandler::HandleBanListHelper(QueryResult result)
 
 bool ChatHandler::HandleBanListIPCommand(const char *args)
 {
-    LoginDatabase.Execute("DELETE FROM ip_banned WHERE unbandate <= UNIX_TIMESTAMP() AND unbandate<>bandate");
+    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_DEL_OLD_IP_BANS);
+    LoginDatabase.Execute(stmt);
 
     char* cFilter = strtok((char*)args, " ");
     std::string filter = cFilter ? cFilter : "";

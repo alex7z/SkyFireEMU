@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -488,7 +488,7 @@ void WorldSession::SendStablePet(uint64 guid)
         );*/
 }
 
-void WorldSession::SendStablePetCallback(QueryResult result, uint64 guid)
+void WorldSession::SendStablePetCallback(PreparedQueryResult result, uint64 guid)
 {
     if (!GetPlayer())
         return;
@@ -583,7 +583,7 @@ void WorldSession::HandleStablePet(WorldPacket & recv_data)
         _player->GetGUIDLow(), PET_SAVE_FIRST_STABLE_SLOT, PET_SAVE_LAST_STABLE_SLOT);*/
 }
 
-void WorldSession::HandleStablePetCallback(QueryResult result)
+void WorldSession::HandleStablePetCallback(PreparedQueryResult result)
 {
     /*if (!GetPlayer())
         return;
@@ -642,7 +642,7 @@ void WorldSession::HandleUnstablePet(WorldPacket & recv_data)
             );*/
 }
 
-void WorldSession::HandleUnstablePetCallback(QueryResult result, uint32 petnumber)
+void WorldSession::HandleUnstablePetCallback(PreparedQueryResult result, uint32 petnumber)
 {
     /*if (!GetPlayer())
         return;
@@ -761,12 +761,12 @@ void WorldSession::HandleStableSwapPet(WorldPacket & recv_data)
     // find swapped pet slot in stable
     _stableSwapCallback.SetParam(pet_number);
     _stableSwapCallback.SetFutureResult(
-            CharacterDatabase.PQuery("SELECT slot, entry FROM character_pet WHERE owner = '%u' AND id = '%u'",
+            CharacterDatabase.AsyncPQuery("SELECT slot, entry FROM character_pet WHERE owner = '%u' AND id = '%u'",
                 _player->GetGUIDLow(), pet_number)
             );*/
 }
 
-void WorldSession::HandleStableSwapPetCallback(QueryResult result, uint32 petnumber)
+void WorldSession::HandleStableSwapPetCallback(PreparedQueryResult result, uint32 petnumber)
 {
     /*if (!GetPlayer())
         return;

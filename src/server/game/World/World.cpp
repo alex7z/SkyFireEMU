@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -51,7 +51,7 @@
 #include "MapManager.h"
 #include "CreatureAIRegistry.h"
 #include "BattlegroundMgr.h"
-#include "BattlefieldMgr.h"
+#include "../Battlefields/BattlefieldMgr.h" // ToDo: fixme
 #include "OutdoorPvPMgr.h"
 #include "TemporarySummon.h"
 #include "WaypointMovementGenerator.h"
@@ -77,7 +77,6 @@
 #include "SmartAI.h"
 #include "Channel.h"
 #include "DB2Stores.h"
-#include "ItemInfo.h"
 
 volatile bool World::m_stopEvent = false;
 uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
@@ -1302,8 +1301,8 @@ void World::SetInitialWorldSettings()
     LoadDB2Stores(m_dataPath);
     DetectDBCLang();
 
-    sLog->outString("Loading spell dbc data corrections...");
-    /*sSpellMgr->LoadDbcDataCorrections();*/           ///-needs added to spellmgr
+    /*sLog->outString("Loading spell dbc data corrections...");
+    sSpellMgr->LoadDbcDataCorrections();*/  ///-is now merged to custom attri needs redirected
 
     sLog->outString("Loading SpellInfo store...");
     sSpellMgr->LoadSpellInfoStore();
@@ -1385,17 +1384,20 @@ void World::SetInitialWorldSettings()
     sLog->outString("Loading Item Random Enchantments Table...");
     LoadRandomEnchantmentsTable();
 
-    sLog->outString("Loading Disables");
+    sLog->outString("Loading Disables...");
     DisableMgr::LoadDisables();                                  // must be before loading quests and items
 
     sLog->outString("Loading Items...");                         // must be after LoadRandomEnchantmentsTable and LoadPageTexts
     sObjectMgr->LoadItemTemplates();
 
-    sLog->outString("Loading Item set names...");                // must be after LoadItemPrototypes
-    sObjectMgr->LoadItemSetNames();
+    sLog->outString("Loading Item Extra Data...");              // must be after LoadItemPrototypes
+    sObjectMgr->LoadItemTemplateAddon();
 
-    //sLog->outString("Loading Items Info...");
-    //sItemInfoMgr->LoadItemInfo();
+    sLog->outString("Loading Item Scripts...");                 // must be after LoadItemPrototypes
+    sObjectMgr->LoadItemScriptNames();
+
+    sLog->outString("Loading Item set names...");               // must be after LoadItemPrototypes
+    sObjectMgr->LoadItemSetNames();
 
     sLog->outString("Loading Creature Model Based Info Data...");
     sObjectMgr->LoadCreatureModelInfo();
@@ -1576,6 +1578,9 @@ void World::SetInitialWorldSettings()
     sAuctionMgr->LoadAuctions();
 
     sGuildMgr->LoadGuilds();
+
+    sLog->outString("Loading Guild Rewards...");
+    sGuildMgr->LoadGuildRewards();
 
     sLog->outString("Loading ArenaTeams...");
     sArenaTeamMgr->LoadArenaTeams();
@@ -1777,8 +1782,8 @@ void World::SetInitialWorldSettings()
     sLog->outString("Calculate random battleground reset time..." );
     InitRandomBGResetTime();
 
-    sLog->outString("Calculate guild Advancement XP daily reset time..." );
-    InitGuildAdvancementDailyResetTime();
+    //sLog->outString("Calculate guild Advancement XP daily reset time..." );
+    //InitGuildAdvancementDailyResetTime();
 
     LoadCharacterNameData();
 
@@ -1815,7 +1820,7 @@ void World::DetectDBCLang()
     uint8 default_locale = TOTAL_LOCALES;
     for (uint8 i = default_locale -1; i < TOTAL_LOCALES; --i)  // -1 will be 255 due to uint8
     {
-        if (race->name[i][0] != '\0')                     // check by race names
+        if (race->name != '\0')                     // check by race names
         {
             default_locale = i;
             m_availableDbcLocaleMask |= (1 << i);
@@ -1941,8 +1946,8 @@ void World::Update(uint32 diff)
     if (m_gameTime > m_NextWeeklyQuestReset)
         ResetWeeklyQuests();
 
-    if (m_gameTime > m_NextDailyXPReset)
-        ResetGuildAdvancementDailyXP();
+    // if (m_gameTime > m_NextDailyXPReset)
+        // ResetGuildAdvancementDailyXP();
 
     if (m_gameTime > m_NextRandomBGReset)
         ResetRandomBG();
@@ -2741,11 +2746,26 @@ void World::InitRandomBGResetTime()
         sWorld->setWorldState(WS_BG_DAILY_RESET_TIME, uint64(m_NextRandomBGReset));
 }
 
-void World::InitGuildAdvancementDailyResetTime()
+void World::ResetDailyQuests()
 {
-    time_t dailyxptime = uint64(sWorld->getWorldState(WS_GUILD_AD_DAILY_RESET_TIME));
-    if (!dailyxptime)
-        m_NextDailyXPReset = time_t(time(NULL));         // game time not yet init
+    sLog->outDetail("Daily quests reset for all characters.");
+
+    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_QUEST_STATUS_DAILY);
+    CharacterDatabase.Execute(stmt);
+
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+        if (itr->second->GetPlayer())
+            itr->second->GetPlayer()->ResetDailyQuestStatus();
+
+    // change available dailies
+    sPoolMgr->ChangeDailyQuests();
+}
+
+/*void World::InitGuildAdvancementDailyResetTime()
+{
+    time_t Hourlyxptime = uint64(sWorld->getWorldState(WS_GUILD_AD_HOURLY_RESET_TIME));
+    if (!Hourlyxptime)
+        m_NextHourlyXPReset = time_t(time(NULL));         // game time not yet init
 
     // generate time by config
     time_t curTime = time(NULL);
@@ -2755,76 +2775,23 @@ void World::InitGuildAdvancementDailyResetTime()
     localTm.tm_sec = 0;
 
     // current day reset time
-    time_t nextDayResetTime = mktime(&localTm);
+    time_t nextHourlyResetTime = mktime(&localTm);
 
     // next reset time before current moment
-    if (curTime >= nextDayResetTime)
-        nextDayResetTime += DAY;
+    if (curTime >= nextHourlyResetTime)
+        nextHourlyResetTime += HOUR;
 
     // normalize reset time
-    m_NextDailyXPReset = dailyxptime < curTime ? nextDayResetTime - DAY : nextDayResetTime;
+    m_NextHourlyXPReset = Hourlyxptime < curTime ? nextHourlyResetTime - HOUR : nextHourlyResetTime;
 
-    if (!dailyxptime)
-        sWorld->setWorldState(WS_GUILD_AD_DAILY_RESET_TIME, uint64(m_NextDailyXPReset));
-}
-
-void World::ResetDailyQuests()
-{
-    sLog->outDetail("Daily quests reset for all characters.");
-    CharacterDatabase.Execute("DELETE FROM character_queststatus_daily");
-    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-        if (itr->second->GetPlayer())
-            itr->second->GetPlayer()->ResetDailyQuestStatus();
-
-    // change available dailies
-    sPoolMgr->ChangeDailyQuests();
-}
-
-void World::LoadDBAllowedSecurityLevel()
-{
-    QueryResult result = LoginDatabase.PQuery("SELECT allowedSecurityLevel from realmlist WHERE id = '%d'", realmID);
-    if (result)
-        SetPlayerSecurityLimit(AccountTypes(result->Fetch()->GetUInt16()));
-}
-
-void World::SetPlayerSecurityLimit(AccountTypes _sec)
-{
-    AccountTypes sec = _sec < SEC_CONSOLE ? _sec : SEC_PLAYER;
-    bool update = sec > m_allowedSecurityLevel;
-    m_allowedSecurityLevel = sec;
-    if (update)
-        KickAllLess(m_allowedSecurityLevel);
-}
-
-void World::ResetWeeklyQuests()
-{
-    CharacterDatabase.Execute("DELETE FROM character_queststatus_weekly");
-    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-        if (itr->second->GetPlayer())
-            itr->second->GetPlayer()->ResetWeeklyQuestStatus();
-
-    m_NextWeeklyQuestReset = time_t(m_NextWeeklyQuestReset + WEEK);
-    sWorld->setWorldState(WS_WEEKLY_QUEST_RESET_TIME, uint64(m_NextWeeklyQuestReset));
-
-    // change available weeklies
-    sPoolMgr->ChangeWeeklyQuests();
-}
-
-void World::ResetRandomBG()
-{
-    sLog->outDetail("Random BG status reset for all characters.");
-    CharacterDatabase.Execute("DELETE FROM character_battleground_random");
-    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-        if (itr->second->GetPlayer())
-            itr->second->GetPlayer()->SetRandomWinner(false);
-
-    m_NextRandomBGReset = time_t(m_NextRandomBGReset + DAY);
-    sWorld->setWorldState(WS_BG_DAILY_RESET_TIME, uint64(m_NextRandomBGReset));
+    if (!Hourlyxptime)
+        sWorld->setWorldState(WS_GUILD_AD_HOURLY_RESET_TIME, uint64(m_NextHourlyXPReset));
 }
 
 void World::ResetGuildAdvancementDailyXP()
 {
-    QueryResult result = CharacterDatabase.Query("SELECT level,xp,guildid FROM guild");
+    // sLog->outDetail("Guild Advancement Daily XP status was reset for all characters.");
+    QueryResult result = CharacterDatabase.Query("SELECT level, xp, guildid FROM guild"); // todo: fix the spam, use "SQLDriverQueryLogging=1" in configs to see it in console.
 
     if (!result)
         return;
@@ -2847,15 +2814,61 @@ void World::ResetGuildAdvancementDailyXP()
         else
             m_xp_cap = baseXP;
 
-        CharacterDatabase.PExecute("UPDATE guild SET m_xp_cap = %u, m_today_xp = '0' WHERE guildid = %u", m_xp_cap,guildid);
+        CharacterDatabase.PExecute("UPDATE guild SET m_xp_cap = %u, m_today_xp = '0' WHERE guildid = %u", m_xp_cap, guildid);
 
         ++count;
     }
     while (result->NextRow());
 
-    sLog->outDetail("Guild Advancement Daily XP status reset for all characters.");
-    m_NextDailyXPReset = time_t(m_NextDailyXPReset + DAY);
-    sWorld->setWorldState(WS_GUILD_AD_DAILY_RESET_TIME, uint64(m_NextDailyXPReset));
+    m_NextHourlyXPReset = time_t(m_NextHourlyXPReset + HOUR);
+    sWorld->setWorldState(WS_GUILD_AD_HOURLY_RESET_TIME, uint64(m_NextHourlyXPReset));
+}*/
+
+void World::LoadDBAllowedSecurityLevel()
+{
+    QueryResult result = LoginDatabase.PQuery("SELECT allowedSecurityLevel from realmlist WHERE id = '%d'", realmID);
+    if (result)
+        SetPlayerSecurityLimit(AccountTypes(result->Fetch()->GetUInt16()));
+}
+
+void World::SetPlayerSecurityLimit(AccountTypes _sec)
+{
+    AccountTypes sec = _sec < SEC_CONSOLE ? _sec : SEC_PLAYER;
+    bool update = sec > m_allowedSecurityLevel;
+    m_allowedSecurityLevel = sec;
+    if (update)
+        KickAllLess(m_allowedSecurityLevel);
+}
+
+void World::ResetWeeklyQuests()
+{
+    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_QUEST_STATUS_WEEKLY);
+    CharacterDatabase.Execute(stmt);
+
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+        if (itr->second->GetPlayer())
+            itr->second->GetPlayer()->ResetWeeklyQuestStatus();
+
+    m_NextWeeklyQuestReset = time_t(m_NextWeeklyQuestReset + WEEK);
+    sWorld->setWorldState(WS_WEEKLY_QUEST_RESET_TIME, uint64(m_NextWeeklyQuestReset));
+
+    // change available weeklies
+    sPoolMgr->ChangeWeeklyQuests();
+}
+
+void World::ResetRandomBG()
+{
+    sLog->outDetail("Random BG status reset for all characters.");
+
+    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_BATTLEGROUND_RANDOM);
+    CharacterDatabase.Execute(stmt);
+
+    for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+        if (itr->second->GetPlayer())
+            itr->second->GetPlayer()->SetRandomWinner(false);
+
+    m_NextRandomBGReset = time_t(m_NextRandomBGReset + DAY);
+    sWorld->setWorldState(WS_BG_DAILY_RESET_TIME, uint64(m_NextRandomBGReset));
 }
 
 void World::UpdateMaxSessionCounters()

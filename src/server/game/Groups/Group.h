@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
 #include "QueryResult.h"
 #include "SharedDefines.h"
 #include "Player.h"
-#include "BattlefieldMgr.h"
+#include "../Battlefields/Battlefield.h" // TODO: Fix this!
 
 class Creature;
 class GroupReference;
@@ -116,6 +116,7 @@ enum GroupUpdateFlags
     GROUP_UPDATE_FLAG_PET_MAX_POWER     = 0x00020000,       // uint16 pet max power
     GROUP_UPDATE_FLAG_PET_AURAS         = 0x00040000,       // uint64 mask, for each bit set uint32 spellid + uint8 unk, pet auras...
     GROUP_UPDATE_FLAG_VEHICLE_SEAT      = 0x00080000,       // uint32 vehicle_seat_id (index from VehicleSeat.dbc)
+    GROUP_UPDATE_FLAG_PHASE             = 0x00100000,       // uint32, uint32 phase, string (unconfirmed)
     GROUP_UPDATE_PET                    = 0x0007FC00,       // all pet flags
     GROUP_UPDATE_FULL                   = 0x0007FFFF,       // all known flags
 };
@@ -200,7 +201,12 @@ class Group
         void   UpdateLooterGuid(WorldObject* pLootedObject, bool ifneed = false);
         void   SetLootThreshold(ItemQualities threshold);
         void   Disband(bool hideDestroy=false);
-        void   SetLfgRoles(uint64 guid, const uint8 roles);
+        void   SendGuildGroupStateUpdate(bool guild);
+
+        // Dungeon Finder
+        void SetLfgRoles(uint64& guid, const uint8 roles);
+        void SetRoles(uint64 guid, const uint8 roles);
+        uint8 GetRoles(uint64 guid);
 
         // properties accessories
         bool IsFull() const;
@@ -216,6 +222,7 @@ class Group
         LootMethod GetLootMethod() const;
         uint64 GetLooterGuid() const;
         ItemQualities GetLootThreshold() const;
+        bool IsGuildGroup(uint32 guildId, bool AllInSameMap = false, bool AllInSameInstanceId = false);
 
         uint32 GetDbStoreId() const { return m_dbStoreId; };
 
@@ -240,7 +247,9 @@ class Group
 
         void ConvertToLFG();
         void ConvertToRaid();
+        void ConvertToGroup();
 
+        // some additional raid methods
         void SetBattlegroundGroup(Battleground* bg);
         void SetBattlefieldGroup(Battlefield* bf);
         GroupJoinBattlegroundResult CanJoinBattlegroundQueue(Battleground const* bgOrTemplate, BattlegroundQueueTypeId bgQueueTypeId, uint32 MinPlayerCount, uint32 MaxPlayerCount, bool isRated, uint32 arenaSlot);

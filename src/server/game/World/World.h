@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -471,7 +471,7 @@ enum WorldStates
     WS_WEEKLY_QUEST_RESET_TIME    = 20002,                      // Next weekly reset time
     WS_BG_DAILY_RESET_TIME        = 20003,                      // Next daily BG reset time
     WS_CURRENCY_RESET_TIME        = 20004,                      // Next currency week cap reset time
-    WS_GUILD_AD_DAILY_RESET_TIME  = 20005                       // Next daily Guild Advancement XP reset time
+    WS_GUILD_AD_HOURLY_RESET_TIME  = 20005                       // Next daily Guild Advancement XP reset time
 };
 
 // DB scripting commands
@@ -634,7 +634,7 @@ class World
         time_t GetNextDailyQuestsResetTime() const { return m_NextDailyQuestReset; }
         time_t GetNextWeeklyQuestsResetTime() const { return m_NextWeeklyQuestReset; }
         time_t GetNextRandomBGResetTime() const { return m_NextRandomBGReset; }
-        time_t GetGuildAdvancementDailyXPResetTime() const { return m_NextDailyXPReset; }
+        time_t GetGuildAdvancementDailyXPResetTime() const { return m_NextHourlyXPReset; }
 
         /// Get the maximum skill level a player can reach
         uint16 GetConfigMaxSkillValue() const
@@ -776,10 +776,10 @@ class World
         void InitDailyQuestResetTime();
         void InitWeeklyQuestResetTime();
         void InitRandomBGResetTime();
-        void InitGuildAdvancementDailyResetTime();
+        //void InitGuildAdvancementDailyResetTime();
         void ResetDailyQuests();
         void ResetWeeklyQuests();
-        void ResetGuildAdvancementDailyXP();
+        //void ResetGuildAdvancementDailyXP();
         void ResetRandomBG();
     private:
         static volatile bool m_stopEvent;
@@ -842,6 +842,7 @@ class World
         time_t m_NextWeeklyQuestReset;
         time_t m_NextRandomBGReset;
         time_t m_NextDailyXPReset;
+        time_t m_NextHourlyXPReset;
 
         //Player Queue
         Queue m_QueuedPlayer;

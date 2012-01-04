@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -143,7 +143,6 @@ enum Opcodes
     SMSG_GUILD_UPDATE_ROSTER                         = 0x0085E, // 4.0.6a 13623
     SMSG_GUILD_RANKS_UPDATE                          = 0x0004C, // 4.0.6a 13623
     SMSG_GUILD_REWARDS_LIST                          = 0x00C4C, // 4.0.6a 13623
-    SMSG_GUILD_TRADESKILL_UPDATE                     = 0x0454E, // 4.0.6a 13623
     SMSG_GUILD_MAX_DAILY_XP                          = 0x0441C, // 4.0.6a 13623
     SMSG_GUILD_NEWS_UPDATE                           = 0x0485E, // 4.0.6a 13623
     CMSG_GUILD_REQUEST_NEWS                          = 0x03129, // 4.0.6a 13623
@@ -565,12 +564,14 @@ enum Opcodes
     SMSG_GOSSIP_POI                                  = 0x0B9AC, // 4.0.6a 13623
     CMSG_CHAT_IGNORED                                = 0x0A78C, // 4.0.6a 13623
     CMSG_GUILD_RANK                                  = 0x02709, // 4.0.6a 13623
-    SMSG_GUILD_RANK                                  = 0x0411E, // 4.0.6a 13623
     CMSG_GUILD_RANKS                                 = 0x03129, // 4.0.6a 13623
+    SMSG_GUILD_RANK                                  = 0x0411E, // 4.0.6a 13623
     CMSG_GUILD_ADD_RANK                              = 0x02309, // 4.0.6a 13623
     CMSG_GUILD_DEL_RANK                              = 0x02129, // 4.0.6a 13623
     CMSG_GUILD_SWITCH_RANK                           = 0x03309, // Unknown opcode ID
     CMSG_GUILD_SET_NOTE                              = 0x0232D, // 4.0.6a 13623
+    CMSG_GUILD_QUERY_TRADESKILL                      = 0x02329, // 4.0.6a 13623
+    SMSG_GUILD_TRADESKILL_UPDATE                     = 0x0454E, // 4.0.6a 13623
     SMSG_LOGIN_VERIFY_WORLD                          = 0x028C0, // 4.0.6a 13623
     CMSG_CLEAR_EXPLORATION                           = 0x100A9, // Unknown opcode ID
     CMSG_SEND_MAIL                                   = 0x02DEC, // 4.0.6a 13623
@@ -772,7 +773,7 @@ enum Opcodes
     SMSG_RAID_INSTANCE_MESSAGE                       = 0x06680, // 4.0.6a 13623
     SMSG_COMPRESSED_MOVES                            = 0x06FE4, // 4.0.6a 13623
     CMSG_GUILD_INFO_TEXT                             = 0x0270D, // 4.0.6a 13623
-    SMSG_GUILD_PARTY_STATE_UPDATE                    = 0x0450C, // 4.0.6a 13623 structure: uint8(isGuildGroup << 7) uint32(numGuildRequired) uint32(numGuildPresent) float(xpMultiplier) NOTE: xpMultiplier/100.0f
+    SMSG_GUILD_PARTY_STATE_UPDATE                    = 0x0450C, // 4.0.6a 13623
     SMSG_CHAT_RESTRICTED                             = 0x03EC8, // 4.0.6a 13623
     SMSG_SPLINE_SET_RUN_SPEED                        = 0x0F9E8, // 4.0.6a 13623
     SMSG_SPLINE_SET_RUN_BACK_SPEED                   = 0x0E9C0, // 4.0.6a 13623
@@ -1205,8 +1206,8 @@ enum Opcodes
     SMSG_SERVER_INFO_RESPONSE                        = 0x101F7, // Unknown opcode ID
     CMSG_CHECK_LOGIN_CRITERIA                        = 0x101F8, // Unknown opcode ID
     SMSG_SERVER_BUCK_DATA_START                      = 0x101F9, // Unknown opcode ID
-    CMSG_QUERY_VEHICLE_STATUS                        = 0x101F0, // 4.0.6a 13623
-    SMSG_BATTLEGROUND_INFO_THROTTLED                 = 0x00093, // 4.0.6a 13623
+    CMSG_QUERY_VEHICLE_STATUS                        = 0x101F0, // 69A0 ????
+    SMSG_BATTLEGROUND_INFO_THROTTLED                 = 0x075C4, // 4.0.6a 13623
     SMSG_PLAYER_VEHICLE_DATA                         = 0x0A5A4, // 4.0.6a 13623
     CMSG_PLAYER_VEHICLE_ENTER                        = 0x0AEC8, // 4.0.6a 13623
     CMSG_EJECT_PASSENGER                             = 0x0F688, // 4.0.6a 13623
@@ -1318,14 +1319,10 @@ enum Opcodes
     CMSG_GROUP_SET_ROLES                             = 0x08509, // 4.0.6a 13623
     CMSG_WORLD_LOGIN                                 = 0x08508, // 4.0.6a 13623
     SMSG_UNKNOWN_65508                               = 0x0FFE4, // Unknown opcode Name, 4.0.6a 13623
-    //SMSG_INIT_CURRENCY                               = 0x0091C, // 4.0.6a 13623 :redefinition; previous def was 'enumerator'
-    //SMSG_UPDATE_CURRENCY                             = 0x0405E, // 4.0.6a 13623 :redefinition; previous def was 'enumerator'
-    //SMSG_UPDATE_CURRENCY_WEEK_LIMIT                  = 0x04C5C, // 4.0.6a 13623 :redefinition; previous def was 'enumerator'
     SMSG_GUILD_ACHIEVEMENT_EARNED                    = 0x00D5C, // 4.0.6a 13623
     SMSG_GUILD_ACHIEVEMENT_DATA                      = 0x0491E, // 4.0.6a 13623
     CMSG_UI_TIME_REQUEST                             = 0x03FA8, // 4.0.6a 13623
     SMSG_UI_TIME                                     = 0x0618C, // 4.0.6a 13623
-    CMSG_RETURN_TO_GRAVEYARD                         = 0x00593, // 4.0.6a 13623
     SMSG_UNKNOWN_1330                                = 0x0618C, // 4.0.6a 13623
     CMSG_REFORGE_ITEM                                = 0x00313, // 4.0.6a 13623
     CMSG_COMPLETED_ARTIFACTS                         = 0x00A13, // 4.0.6a 13623
@@ -1345,6 +1342,9 @@ enum Opcodes
     CMSG_GET_GUILD_MEMBER_RECIPES                    = 0x0212D, // 4.0.6a 13623
     CMSG_QUERY_GUILD_MEMBERS_FOR_RECIPE              = 0x0210D, // 4.0.6a 13623
     CMSG_GUILD_NEWS_SET_STICKY                       = 0x0252D, // 4.0.6a 13623
+    SMSG_GUILD_CRITERIA_DELETED                      = 0x0000C, // 4.0.6a 13623
+    SMSG_GUILD_CRITERIA_DATA                         = 0x0400E, // 4.0.6a 13623
+    CMSG_RETURN_TO_GRAVEYARD                         = 0x00593, // 4.0.6a 13623
     NUM_MSG_TYPES                                    = 0x102B8  // last unknown opcode + 1.
 };
 

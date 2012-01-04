@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -90,11 +90,11 @@ struct ItemSparseEntry
     int32      SpellCategory[MAX_ITEM_PROTO_SPELLS];         // 85 - 89
     int32      SpellCategoryCooldown[MAX_ITEM_PROTO_SPELLS]; // 90 - 94
     uint32     Bonding;                                      // 95
-    DB2String  Name;                                         // 96
-    DB2String  Name2;                                        // 97
-    DB2String  Name3;                                        // 98
-    DB2String  Name4;                                        // 99
-    DB2String  Description;                                  // 100
+    char*      Name;                                         // 96
+    char*      Name2;                                        // 97
+    char*      Name3;                                        // 98
+    char*      Name4;                                        // 99
+    char*      Description;                                  // 100
     uint32     PageText;                                     // 101
     uint32     LanguageID;                                   // 102
     uint32     PageMaterial;                                 // 103

@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -628,9 +628,6 @@ class Spell
         bool IsValidDeadOrAliveTarget(Unit const* target) const;
         void HandleLaunchPhase();
         void DoAllEffectOnLaunchTarget(TargetInfo& targetInfo, float* multiplier);
-        void SpellDamageSchoolDmg(SpellEffIndex effIndex);
-        void SpellDamageWeaponDmg(SpellEffIndex effIndex);
-        void SpellDamageHeal(SpellEffIndex effIndex);
 
         void PrepareTargetProcessing();
         void FinishTargetProcessing();
@@ -665,7 +662,7 @@ class Spell
         // -------------------------------------------
 
         uint32 m_spellState;
-        uint32 m_timer;
+        int32 m_timer;
 
         TriggerCastFlags _triggeredCastFlags;
 

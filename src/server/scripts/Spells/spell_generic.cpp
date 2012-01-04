@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -566,6 +566,9 @@ class spell_creature_permanent_feign_death : public SpellScriptLoader
                 Unit* target = GetTarget();
                 target->SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_DEAD);
                 target->SetFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_FEIGN_DEATH);
+
+                if (target->GetTypeId() == TYPEID_UNIT)
+                    target->ToCreature()->SetReactState(REACT_PASSIVE);
             }
 
             void Register()
@@ -1412,15 +1415,15 @@ class spell_gen_spirit_healer_res : public SpellScriptLoader
         class spell_gen_spirit_healer_res_SpellScript : public SpellScript
         {
             PrepareSpellScript(spell_gen_spirit_healer_res_SpellScript);
-            
+
             void HandleDummy(SpellEffIndex /*effIndex*/)
             {
                 Unit* caster = GetOriginalCaster();
                 Unit* target = GetHitUnit();
-                
+
                 if(caster->GetTypeId() != TYPEID_PLAYER)
                     return;
-                
+
                 WorldPacket data(SMSG_SPIRIT_HEALER_CONFIRM, 8);
                 data << uint64(target->GetGUID());
                 caster->ToPlayer()->GetSession()->SendPacket(&data);
@@ -1446,12 +1449,12 @@ class spell_gen_reindeer_transformation : public SpellScriptLoader
         class spell_gen_reindeer_transformation_SpellScript : public SpellScript
         {
             PrepareSpellScript(spell_gen_reindeer_transformation_SpellScript);
-            
+
             void HandleDummy(SpellEffIndex /*effIndex*/)
             {
                 Unit* caster = GetCaster();
                 Unit* target = GetHitUnit();
-                
+
                 if (!caster->HasAuraType(SPELL_AURA_MOUNTED))
                     return;
 

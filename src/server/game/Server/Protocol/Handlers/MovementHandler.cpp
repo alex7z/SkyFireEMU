@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010-2011 Project SkyFire <http://www.projectskyfire.org/>
- * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2010-2012 Project SkyFire <http://www.projectskyfire.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2012 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -354,9 +354,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket & recv_data)
 
     if (plMover)                     // nothing is charmed, or player charmed
     {
-        if (plMover->GetEmoteState() != 0 && opcode == MSG_MOVE_START_FORWARD && opcode != MSG_MOVE_SET_FACING &&
-           opcode != MSG_MOVE_START_TURN_LEFT && opcode != MSG_MOVE_START_TURN_RIGHT &&
-           opcode != MSG_MOVE_STOP_TURN)
+        if (plMover->GetEmoteState() != 0 && opcode == MSG_MOVE_START_FORWARD)
            plMover->SetEmoteState(0);
 
         plMover->UpdateFallInformationIfNeed(movementInfo, opcode);
