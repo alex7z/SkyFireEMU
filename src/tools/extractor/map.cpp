@@ -134,6 +134,8 @@ struct map_fileheader
     uint32 heightMapSize;
     uint32 liquidMapOffset;
     uint32 liquidMapSize;
+    uint32 holesOffset;
+    uint32 holesSize;
 };
 
 #define MAP_AREA_NO_AREA      0x0001
@@ -218,6 +220,13 @@ float CONF_flat_liquid_delta_limit = 0.001f; // If max - min less this value - l
 bool ConvertADT(char *filename, char *filename2, int cell_y, int cell_x, uint32 build, HANDLE _mpq)
 {
     ADT_file adt(filename, _mpq);
+
+    adt_MCIN *cells = adt.a_grid->getMCIN();
+    if (!cells)
+    {
+        printf("Can't find cells in '%s'\n", filename);
+        return false;
+    }
 
     if (adt.isEof())
     {
@@ -654,8 +663,8 @@ bool ConvertADT(char *filename, char *filename2, int cell_y, int cell_x, uint32 
         liquidHeader.liquidType = 0;
         liquidHeader.offsetX = minX;
         liquidHeader.offsetY = minY;
-        liquidHeader.width   = maxX - minX + 1;
-        liquidHeader.height  = maxY - minY + 1;
+        liquidHeader.width   = maxX - minX + 1 + 1;
+        liquidHeader.height  = maxY - minY + 1 + 1;
         liquidHeader.liquidLevel = minHeight;
 
         if (maxHeight == minHeight)
@@ -675,6 +684,28 @@ bool ConvertADT(char *filename, char *filename2, int cell_y, int cell_x, uint32 
 
         if (!(liquidHeader.flags & MAP_LIQUID_NO_HEIGHT))
             map.liquidMapSize += sizeof(float)*liquidHeader.width*liquidHeader.height;
+    }
+
+    // map hole info
+    uint16 holes[ADT_CELLS_PER_GRID][ADT_CELLS_PER_GRID];
+
+    if (map.liquidMapOffset)
+        map.holesOffset = map.liquidMapOffset + map.liquidMapSize;
+    else
+        map.holesOffset = map.heightMapOffset + map.heightMapSize;
+
+    map.holesSize = sizeof(holes);
+    memset(holes, 0, map.holesSize);
+
+    for (int i = 0; i < ADT_CELLS_PER_GRID; ++i)
+    {
+        for (int j = 0; j < ADT_CELLS_PER_GRID; ++j)
+        {
+            adt_MCNK * cell = cells->getMCNK(i,j);
+            if (!cell)
+                continue;
+            holes[i][j] = cell->holes;
+        }
     }
 
     // Ok all data prepared - store it
@@ -723,6 +754,10 @@ bool ConvertADT(char *filename, char *filename2, int cell_y, int cell_x, uint32 
                 fwrite(&liquid_height[y+liquidHeader.offsetY][liquidHeader.offsetX], sizeof(float), liquidHeader.width, output);
         }
     }
+
+    // store hole data
+    fwrite(holes, map.holesSize, 1, output);
+
     fclose(output);
 
     return true;
