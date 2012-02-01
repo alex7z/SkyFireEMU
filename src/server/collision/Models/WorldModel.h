@@ -67,6 +67,8 @@ namespace VMAP
             uint32 iType;    //!< liquid type
             float *iHeight;  //!< (tilesX + 1)*(tilesY + 1) height values
             uint8 *iFlags;   //!< info if liquid tile is used
+        public:
+            void getPosInfo(uint32 &tilesX, uint32 &tilesY, Vector3 &corner) const;
     };
 
     /*! holding additional info for WMO group files */
@@ -99,6 +101,8 @@ namespace VMAP
             std::vector<MeshTriangle> triangles;
             BIH meshTree;
             WmoLiquid* iLiquid;
+        public:
+            void getMeshData(std::vector<Vector3> &vertices, std::vector<MeshTriangle> &triangles, WmoLiquid* &liquid);
     };
     /*! Holds a model (converted M2 or WMO) in its original coordinate space */
     class WorldModel
@@ -118,6 +122,8 @@ namespace VMAP
             uint32 RootWMOID;
             std::vector<GroupModel> groupModels;
             BIH groupTree;
+        public:
+            void getGroupModels(std::vector<GroupModel> &groupModels);
     };
 } // namespace VMAP
 

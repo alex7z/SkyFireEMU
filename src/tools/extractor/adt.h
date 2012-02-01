@@ -296,6 +296,7 @@ class adt_MHDR
     uint32 data5;              //0x003C
 public:
     bool prepareLoadedData();
+    adt_MCIN *getMCIN(){ return (adt_MCIN *)((uint8 *)&pad+offsMCIN);}
     adt_MH2O *getMH2O()
     {
         if (offsMH2O)
