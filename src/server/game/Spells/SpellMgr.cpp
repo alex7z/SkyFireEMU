@@ -3057,6 +3057,10 @@ void SpellMgr::LoadSpellCustomAttr()
             case 20335: // Heart of the Crusader
             case 20336:
             case 20337:
+            case 26573: // Consecration
+                spellInfo->Effects[1].TriggerSpell = 82366;
+                spellInfo->Effects[2].TriggerSpell = 36946;  
+                break;             
             case 63320: // Glyph of Life Tap
             // Entries were not updated after spell effect change, we have to do that manually :/
                 spellInfo->AttributesEx3 |= SPELL_ATTR3_CAN_PROC_WITH_TRIGGERED;
@@ -3343,7 +3347,7 @@ void SpellMgr::LoadSpellCustomAttr()
             case 64389: // Sentinel Blast (Auriaya)
             case 64678: // Sentinel Blast (Auriaya)
                 spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(28); // 5 seconds, wrong DBC data?
-                break;
+                break;          
             case 64321: // Potent Pheromones (Freya)
                 // spell should dispel area aura, but doesn't have the attribute
                 // may be db data bug, or blizz may keep reapplying area auras every update with checking immunity
@@ -3604,6 +3608,22 @@ void SpellMgr::LoadSpellCustomAttr()
             case 69293: // Wing Buffet
             case 74439: // Machine Gun
             case 63278: // Mark of the Faceless (General Vezax)
+            case 62544: // Thrust (Argent Tournament)
+            case 64588: // Thrust (Argent Tournament)
+            case 66479: // Thrust (Argent Tournament)
+            case 68505: // Thrust (Argent Tournament)
+            case 62626: // Break-Shield (Argent Tournament, Player)
+            case 64590: // Break-Shield (Argent Tournament, Player)
+            case 64342: // Break-Shield (Argent Tournament, NPC)
+            case 64686: // Break-Shield (Argent Tournament, NPC)
+            case 65147: // Break-Shield (Argent Tournament, NPC)
+            case 68504: // Break-Shield (Argent Tournament, NPC)
+            case 62874: // Charge (Argent Tournament, Player)
+            case 68498: // Charge (Argent Tournament, Player)
+            case 64591: // Charge (Argent Tournament, Player)
+            case 63003: // Charge (Argent Tournament, NPC)
+            case 63010: // Charge (Argent Tournament, NPC)
+            case 68321: // Charge (Argent Tournament, NPC)
             case 72255: // Mark of the Fallen Champion (Deathbringer Saurfang)
             case 72444: // Mark of the Fallen Champion (Deathbringer Saurfang)
             case 72445: // Mark of the Fallen Champion (Deathbringer Saurfang)
