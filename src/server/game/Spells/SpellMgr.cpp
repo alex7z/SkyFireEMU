@@ -3150,6 +3150,11 @@ void SpellMgr::LoadSpellCustomAttr()
             case 44401: // Missile Barrage
                 spellInfo->ProcCharges = 1;
                 break;
+            case 84726: // Frostfire orb rank 1
+            case 84727: // Frostfire orb rank 2
+                spellInfo->Effects[1].ApplyAuraName = SPELL_AURA_333_REPLACE_SPELL;
+                spellInfo->Effects[1].BasePoints = 92284;
+                break;                
             case 44544: // Fingers of Frost
                 spellInfo->Effects[0].SpellClassMask = flag96(685904631, 1151048, 0);
                 break;
