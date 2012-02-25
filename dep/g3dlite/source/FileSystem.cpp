@@ -27,10 +27,20 @@
 #   include <io.h>
 
 #define stat64 _stat64
+#elif defined(__FreeBSD__)
+#   include <dirent.h>
+#   include <fnmatch.h>
+#   include <unistd.h>
+#   define O_LARGEFILE      0100000
+#   define stat64 stat
+#   define _stat stat
+#   define _getcwd getcwd
 #else
 #   include <dirent.h>
 #   include <fnmatch.h>
 #   include <unistd.h>
+#   define O_LARGEFILE      0100000
+#   define stat64 stat
 #   define _getcwd getcwd
 #   define _stat stat
 #endif
