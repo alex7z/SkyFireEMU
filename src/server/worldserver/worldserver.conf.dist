@@ -1009,10 +1009,10 @@ CharactersPerAccount = 50
 #
 #    CharactersPerRealm
 #        Description: Limit number of characters per account on this realm.
-#        Range:       1-10
-#        Default:     10 - (Client limitation)
+#        Range:       1-12
+#        Default:     12 - (Client limitation)
 
-CharactersPerRealm = 10
+CharactersPerRealm = 12
 
 #
 #    HeroicCharactersPerRealm
@@ -1253,6 +1253,22 @@ Quests.HighLevelHideDiff = 7
 #                     1 - (Enabled)
 
 Quests.IgnoreRaid = 0
+
+#
+#    Quests.IgnoreAutoAccept
+#        Description: Ignore auto accept flag. Clients will have to manually accept all quests.
+#        Default:     0 - (Disabled, DB values determine if quest is marked auto accept or not.)
+#                     1 - (Enabled, clients will not be told to automatically accept any quest.)
+
+Quests.IgnoreAutoAccept = 0
+
+#
+#    Quests.IgnoreAutoComplete
+#        Description: Ignore auto complete flag. Clients will have to manually complete all quests.
+#        Default:     0 - (Disabled, DB values determine if quest is marked auto complete or not.)
+#                     1 - (Enabled, clients will not be told to automatically complete any quest.)
+
+Quests.IgnoreAutoComplete = 0
 
 #
 #    Guild.EventLogRecordsCount

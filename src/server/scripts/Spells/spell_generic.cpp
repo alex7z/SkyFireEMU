@@ -3,7 +3,7 @@
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
+ * Free Software Foundation; either version 3 of the License, or (at your
  * option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
@@ -1733,7 +1733,7 @@ enum BreakShieldSpells
 class spell_gen_break_shield: public SpellScriptLoader
 {
     public:
-        spell_gen_break_shield() : SpellScriptLoader("spell_gen_break_shield") { }
+        spell_gen_break_shield(const char* name) : SpellScriptLoader(name) {}
 
         class spell_gen_break_shield_SpellScript : public SpellScript
         {
@@ -2122,11 +2122,8 @@ class spell_gen_summon_tournament_mount : public SpellScriptLoader
 
             SpellCastResult CheckIfLanceEquiped()
             {
-                if (GetCaster()->HasAuraType(SPELL_AURA_MOD_SHAPESHIFT))
-                {
-                    SetCustomCastResultMessage(SPELL_CUSTOM_ERROR_CANT_MOUNT_WITH_SHAPESHIFT);
-                    return SPELL_FAILED_CUSTOM_ERROR;
-                }
+                if (GetCaster()->IsInDisallowedMountForm())
+                    GetCaster()->RemoveAurasByType(SPELL_AURA_MOD_SHAPESHIFT);
 
                 if (!GetCaster()->HasAura(SPELL_LANCE_EQUIPPED))
                 {
@@ -2473,7 +2470,8 @@ void AddSC_generic_spell_scripts()
     new spell_gen_dalaran_disguise("spell_gen_sunreaver_disguise");
     new spell_gen_dalaran_disguise("spell_gen_silver_covenant_disguise");
     new spell_gen_elune_candle();
-    new spell_gen_break_shield();
+    new spell_gen_break_shield("spell_gen_break_shield");
+    new spell_gen_break_shield("spell_gen_tournament_counterattack");
     new spell_gen_mounted_charge();
     new spell_gen_defend();
     new spell_gen_tournament_duel();

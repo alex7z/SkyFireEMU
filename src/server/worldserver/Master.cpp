@@ -4,7 +4,7 @@
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
+ * Free Software Foundation; either version 3 of the License, or (at your
  * option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but WITHOUT
@@ -133,7 +133,9 @@ int Master::Run()
 #ifdef USE_SFMT_FOR_RNG
     sLog->outString("\n");
     sLog->outString("SFMT has been enabled as the random number generator, if worldserver");
-    sLog->outString("freezes or crashes randomly, first, try disabling SFMT in CMAKE configuration");
+    sLog->outString("freezes or crashes randomly, first, try disabling SFMT in CMAKE configuration.");
+    sLog->outString("Initializing SFMT before first use.");
+    init_sfmt();
     sLog->outString("\n");
 #endif //USE_SFMT_FOR_RNG
 
