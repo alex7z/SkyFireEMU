@@ -600,24 +600,10 @@ WorldObject* Spell::FindCorpseUsing()
     // non-standard target selection
     float max_range = m_spellInfo->GetMaxRange(false);
 
-    CellCoord p(Trinity::ComputeCellCoord(m_caster->GetPositionX(), m_caster->GetPositionY()));
-    Cell cell(p);
-    cell.SetNoCreate();
-
     WorldObject* result = NULL;
-
     T u_check(m_caster, max_range);
     Trinity::WorldObjectSearcher<T> searcher(m_caster, result, u_check);
-
-    TypeContainerVisitor<Trinity::WorldObjectSearcher<T>, GridTypeMapContainer > grid_searcher(searcher);
-    cell.Visit(p, grid_searcher, *m_caster->GetMap(), *m_caster, max_range);
-
-    if (!result)
-    {
-        TypeContainerVisitor<Trinity::WorldObjectSearcher<T>, WorldTypeMapContainer > world_searcher(searcher);
-        cell.Visit(p, world_searcher, *m_caster->GetMap(), *m_caster, max_range);
-    }
-
+    m_caster->GetMap()->VisitFirstFound(m_caster->GetPositionX(), m_caster->GetPositionY(), max_range, searcher);
     return result;
 }
 
@@ -690,8 +676,39 @@ void Spell::InitExplicitTargets(SpellCastTargets const& targets)
         m_targets.RemoveSrc();
 }
 
+void Spell::SelectExplicitTargets()
+{
+    // here go all explicit target changes made to explicit targets after spell prepare phase is finished
+    if (Unit* target = m_targets.GetUnitTarget())
+    {
+        // check for explicit target redirection, for Grounding Totem for example
+        if (m_spellInfo->GetExplicitTargetMask() & TARGET_FLAG_UNIT_ENEMY
+            || (m_spellInfo->GetExplicitTargetMask() & TARGET_FLAG_UNIT && !m_spellInfo->IsPositive()))
+        {
+            Unit* redirect;
+            switch (m_spellInfo->DmgClass)
+            {
+                case SPELL_DAMAGE_CLASS_MAGIC:
+                    redirect = m_caster->GetMagicHitRedirectTarget(target, m_spellInfo);
+                    break;
+                case SPELL_DAMAGE_CLASS_MELEE:
+                case SPELL_DAMAGE_CLASS_RANGED:
+                    redirect = m_caster->GetMeleeHitRedirectTarget(target, m_spellInfo);
+                    break;
+                default:
+                    redirect = NULL;
+                    break;
+            }
+            if (redirect && (redirect != target))
+                m_targets.SetUnitTarget(redirect);
+        }
+    }
+}
+
 void Spell::SelectSpellTargets()
 {
+    // select targets for cast phase
+    SelectExplicitTargets();
     uint32 processedTargets = 0;
     for (uint32 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
@@ -2109,16 +2126,7 @@ uint32 Spell::SelectEffectTargets(uint32 i, SpellImplicitTargetInfo const& cur)
             switch (cur.GetTarget())
             {
                 case TARGET_UNIT_TARGET_ENEMY:
-                    if (Unit* magnet = m_caster->SelectMagnetTarget(target, m_spellInfo))
-                        if (magnet != target)
-                            m_targets.SetUnitTarget(magnet);
-                    pushType = PUSH_CHAIN;
-                    break;
                 case TARGET_UNIT_TARGET_ANY:
-                    if (!m_spellInfo->IsPositive())
-                        if (Unit* magnet = m_caster->SelectMagnetTarget(target, m_spellInfo))
-                            if (magnet != target)
-                                m_targets.SetUnitTarget(magnet);
                     pushType = PUSH_CHAIN;
                     break;
                 case TARGET_UNIT_TARGET_CHAINHEAL_ALLY:
@@ -2593,11 +2601,15 @@ uint32 Spell::SelectEffectTargets(uint32 i, SpellImplicitTargetInfo const& cur)
                         }
                         case 46584: // Raise Dead
                         {
-                            if (WorldObject* result = FindCorpseUsing<Trinity::RaiseDeadObjectCheck> ())
+                            if (WorldObject* result = FindCorpseUsing<Trinity::RaiseDeadObjectCheck>())
                             {
                                 switch (result->GetTypeId())
                                 {
                                     case TYPEID_UNIT:
+                                    case TYPEID_PLAYER:
+                                        unitList.push_back(result->ToUnit());
+                                        // no break;
+                                    case TYPEID_CORPSE: // wont work until corpses are allowed in target lists, but at least will send dest in packet
                                         m_targets.SetDst(*result);
                                         break;
                                     default:
@@ -2621,7 +2633,7 @@ uint32 Spell::SelectEffectTargets(uint32 i, SpellImplicitTargetInfo const& cur)
                             {
                                 CleanupTargetList();
 
-                                WorldObject* result = FindCorpseUsing <Trinity::ExplodeCorpseObjectCheck> ();
+                                WorldObject* result = FindCorpseUsing<Trinity::ExplodeCorpseObjectCheck>();
 
                                 if (result)
                                 {
@@ -3787,6 +3799,27 @@ void Spell::SendCastResult(Player* caster, SpellInfo const* spellInfo, uint8 cas
         case SPELL_FAILED_CUSTOM_ERROR:
             data << uint32(customError);
             break;
+        case SPELL_FAILED_REAGENTS:
+        {
+            uint32 missingItem = 0;
+            for (uint32 i = 0; i < MAX_SPELL_REAGENTS; i++)
+            {
+                if (spellInfo->Reagent[i] <= 0)
+                    continue;
+
+                uint32 itemid    = spellInfo->Reagent[i];
+                uint32 itemcount = spellInfo->ReagentCount[i];
+
+                if (!caster->HasItemCount(itemid, itemcount))
+                {
+                    missingItem = itemid;
+                    break;
+                }
+            }
+
+            data << uint32(missingItem);  // first missing item
+            break;
+        }
         default:
             break;
     }
@@ -4745,12 +4778,23 @@ SpellCastResult Spell::CheckCast(bool strict)
             return SPELL_FAILED_DONT_REPORT;
     }
 
-    // check spell caster's conditions from database
-    if (Player* plrCaster = m_caster->GetCharmerOrOwnerPlayerOrPlayerItself())
+    // check spell cast conditions from database
     {
+        ConditionSourceInfo condInfo = ConditionSourceInfo(m_caster);
+        condInfo.mConditionTargets[1] = m_targets.GetObjectTarget();
         ConditionList conditions = sConditionMgr->GetConditionsForNotGroupedEntry(CONDITION_SOURCE_TYPE_SPELL, m_spellInfo->Id);
-        if (!conditions.empty() && !sConditionMgr->IsPlayerMeetToConditions(plrCaster, conditions))
+        if (!conditions.empty() && !sConditionMgr->IsObjectMeetToConditions(condInfo, conditions))
+        {
+            // send error msg to player if condition failed and text message available
+            // TODO: using WorldSession::SendNotification is not blizzlike
+            if (Player* playerCaster = m_caster->ToPlayer())
+            {
+                if (playerCaster->GetSession() && condInfo.mLastFailedCondition
+                    && condInfo.mLastFailedCondition->ErrorTextd)
+                    playerCaster->GetSession()->SendNotification(condInfo.mLastFailedCondition->ErrorTextd);
+            }
             return SPELL_FAILED_DONT_REPORT;
+        }
     }
 
     // Don't check explicit target for passive spells (workaround) (check should be skipped only for learn case)
@@ -5072,7 +5116,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 if (creature->GetCreatureType() != CREATURE_TYPE_CRITTER && !creature->loot.isLooted())
                     return SPELL_FAILED_TARGET_NOT_LOOTED;
 
-                uint32 skill = creature->GetCreatureInfo()->GetRequiredLootSkill();
+                uint32 skill = creature->GetCreatureTemplate()->GetRequiredLootSkill();
 
                 int32 skillValue = m_caster->ToPlayer()->GetSkillValue(skill);
                 int32 TargetLevel = m_targets.GetUnitTarget()->getLevel();
@@ -5346,7 +5390,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                             return SPELL_FAILED_NO_ACTIONS;
                         }
 
-                        if (!target->GetCreatureInfo()->isTameable (m_caster->ToPlayer()->CanTameExoticPets()))
+                        if (!target->GetCreatureTemplate()->isTameable (m_caster->ToPlayer()->CanTameExoticPets()))
                         {
                             m_caster->ToPlayer()->SendPetTameResult(PET_TAME_ERROR_CANT_CONTROL_EXOTIC);
                             return SPELL_FAILED_NO_ACTIONS;
@@ -5976,7 +6020,7 @@ SpellCastResult Spell::CheckItems()
                     }
                 }
                 if (!p_caster->HasItemCount(itemid, itemcount))
-                    return SPELL_FAILED_ITEM_NOT_READY;         // 0x54
+                    return SPELL_FAILED_REAGENTS;
             }
         }
     }

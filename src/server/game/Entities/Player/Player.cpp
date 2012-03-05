@@ -547,7 +547,7 @@ inline void KillRewarder::_RewardKillCredit(Player* player)
     // 4.4. Give kill credit (player must not be in group, or he must be alive or without corpse).
     if (!_group || player->isAlive() || !player->GetCorpse())
         if (_victim->GetTypeId() == TYPEID_UNIT)
-            player->KilledMonster(_victim->ToCreature()->GetCreatureInfo(), _victim->GetGUID());
+            player->KilledMonster(_victim->ToCreature()->GetCreatureTemplate(), _victim->GetGUID());
 }
 
 void KillRewarder::_RewardPlayer(Player* player, bool isDungeon)
@@ -872,8 +872,6 @@ Player::Player(WorldSession* session): Unit(true), _achievementMgr(this), _reput
 
     for (uint8 i = 0; i < MAX_POWERS; ++i)
         _powerFraction[i] = 0;
-
-    _ConditionErrorMsgId = 0;
 
     isDebugAreaTriggers = false;
 
@@ -2738,11 +2736,11 @@ Creature* Player::GetNPCIfCanInteractWith(uint64 guid, uint32 npcflagmask)
         return NULL;
 
     // Deathstate checks
-    if (!isAlive() && !(creature->GetCreatureInfo()->type_flags & CREATURE_TYPEFLAGS_GHOST))
+    if (!isAlive() && !(creature->GetCreatureTemplate()->type_flags & CREATURE_TYPEFLAGS_GHOST))
         return NULL;
 
     // alive or spirit healer
-    if (!creature->isAlive() && !(creature->GetCreatureInfo()->type_flags & CREATURE_TYPEFLAGS_DEAD_INTERACT))
+    if (!creature->isAlive() && !(creature->GetCreatureTemplate()->type_flags & CREATURE_TYPEFLAGS_DEAD_INTERACT))
         return NULL;
 
     // appropriate npc type
@@ -4488,7 +4486,7 @@ bool Player::resetTalents(bool no_cost)
             // skip non-existant talent ranks
             if (talentInfo->RankID[rank] == 0)
                 continue;
-        const SpellInfo* _spellEntry = sSpellMgr->GetSpellInfo(talentInfo->RankID[rank]);
+            SpellInfo const* _spellEntry = sSpellMgr->GetSpellInfo(talentInfo->RankID[rank]);
             if (!_spellEntry)
                 continue;
             removeSpell(talentInfo->RankID[rank], true);
@@ -4538,7 +4536,7 @@ bool Player::resetTalents(bool no_cost)
     /* when prev line will dropped use next line
     if (Pet* pet = GetPet())
     {
-        if (pet->getPetType() == HUNTER_PET && !pet->GetCreatureInfo()->isTameable(CanTameExoticPets()))
+        if (pet->getPetType() == HUNTER_PET && !pet->GetCreatureTemplate()->isTameable(CanTameExoticPets()))
             RemovePet(NULL, PET_SAVE_NOT_IN_SLOT, true);
     }
     */
@@ -6294,7 +6292,7 @@ void Player::UpdateWeaponSkill(WeaponAttackType attType)
     if (GetShapeshiftForm() == FORM_TREE)
         return;                                             // use weapon but not skill up
 
-    if (victim && victim->GetTypeId() == TYPEID_UNIT && (victim->ToCreature()->GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_NO_SKILLGAIN))
+    if (victim && victim->GetTypeId() == TYPEID_UNIT && (victim->ToCreature()->GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_NO_SKILLGAIN))
         return;
 
     uint32 weapon_skill_gain = sWorld->getIntConfig(CONFIG_SKILL_GAIN_WEAPON);
@@ -7029,7 +7027,7 @@ void Player::RewardOnKill(Unit *victim, float rate)
     if (victim->ToCreature()->IsReputationGainDisabled())
         return;
 
-    RewardOnKillEntry const* Rew = sObjectMgr->GetRewardOnKillEntry(victim->ToCreature()->GetCreatureInfo()->Entry);
+    RewardOnKillEntry const* Rew = sObjectMgr->GetRewardOnKillEntry(victim->ToCreature()->GetCreatureTemplate()->Entry);
 
     if (!Rew)
         return;
@@ -9427,7 +9425,7 @@ void Player::SendLoot(uint64 guid, LootType loot_type)
                 creature->lootForPickPocketed = true;
                 loot->clear();
 
-                if (uint32 lootid = creature->GetCreatureInfo()->pickpocketLootId)
+                if (uint32 lootid = creature->GetCreatureTemplate()->pickpocketLootId)
                     loot->FillLoot(lootid, LootTemplates_Pickpocketing, this, true);
 
                 // Generate extra money for pick pocket loot
@@ -9474,7 +9472,7 @@ void Player::SendLoot(uint64 guid, LootType loot_type)
             if (loot_type == LOOT_SKINNING)
             {
                 loot->clear();
-                loot->FillLoot(creature->GetCreatureInfo()->SkinLootId, LootTemplates_Skinning, this, true);
+                loot->FillLoot(creature->GetCreatureTemplate()->SkinLootId, LootTemplates_Skinning, this, true);
                 permission = OWNER_PERMISSION;
             }
             // set group rights only for loot_type != LOOT_SKINNING
@@ -9544,7 +9542,7 @@ void Player::SendLoot(uint64 guid, LootType loot_type)
     {
         if (Creature* creature = GetMap()->GetCreature(guid))
         {
-            objEntry = creature->GetCreatureInfo()->Entry;
+            objEntry = creature->GetCreatureTemplate()->Entry;
             objType = 1;
         }
     }
@@ -14672,7 +14670,7 @@ void Player::PrepareGossipMenu(WorldObject* source, uint32 menuId /*= 0*/, bool 
     for (GossipMenuItemsMap::const_iterator itr = menuItemBounds.first; itr != menuItemBounds.second; ++itr)
     {
         bool canTalk = true;
-        if (!sConditionMgr->IsPlayerMeetToConditions(this, itr->second.Conditions))
+        if (!sConditionMgr->IsObjectMeetToConditions(this, source, itr->second.Conditions))
             continue;
 
         if (source->GetTypeId() == TYPEID_UNIT)
@@ -14712,7 +14710,7 @@ void Player::PrepareGossipMenu(WorldObject* source, uint32 menuId /*= 0*/, bool 
                         canTalk = false;
                     break;
                 case GOSSIP_OPTION_UNLEARNPETTALENTS:
-                    if (!GetPet() || GetPet()->getPetType() != HUNTER_PET || GetPet()->_spells.size() <= 1 || creature->GetCreatureInfo()->trainer_type != TRAINER_TYPE_PETS || creature->GetCreatureInfo()->trainer_class != CLASS_HUNTER)
+                    if (!GetPet() || GetPet()->getPetType() != HUNTER_PET || GetPet()->_spells.size() <= 1 || creature->GetCreatureTemplate()->trainer_type != TRAINER_TYPE_PETS || creature->GetCreatureTemplate()->trainer_class != CLASS_HUNTER)
                         canTalk = false;
                     break;
                 case GOSSIP_OPTION_TAXIVENDOR:
@@ -14817,7 +14815,7 @@ void Player::SendPreparedGossip(WorldObject* source)
     uint32 textId = GetGossipTextId(source);
 
     if (uint32 menuId = PlayerTalkClass->GetGossipMenu().GetMenuId())
-        textId = GetGossipTextId(menuId);
+        textId = GetGossipTextId(menuId, source);
 
     PlayerTalkClass->SendGossipMenu(textId, source->GetGUID());
 }
@@ -14965,10 +14963,10 @@ uint32 Player::GetGossipTextId(WorldObject* source)
     if (!source)
         return DEFAULT_GOSSIP_MESSAGE;
 
-    return GetGossipTextId(GetDefaultGossipMenuForSource(source));
+    return GetGossipTextId(GetDefaultGossipMenuForSource(source), source);
 }
 
-uint32 Player::GetGossipTextId(uint32 menuId)
+uint32 Player::GetGossipTextId(uint32 menuId, WorldObject* source)
 {
     uint32 textId = DEFAULT_GOSSIP_MESSAGE;
 
@@ -14978,7 +14976,7 @@ uint32 Player::GetGossipTextId(uint32 menuId)
     GossipMenusMapBounds menuBounds = sObjectMgr->GetGossipMenusMapBounds(menuId);
 
     for (GossipMenusMap::const_iterator itr = menuBounds.first; itr != menuBounds.second; ++itr)
-        if (sConditionMgr->IsPlayerMeetToConditions(this, itr->second.conditions))
+        if (sConditionMgr->IsObjectMeetToConditions(this, source, itr->second.conditions))
             textId = itr->second.text_id;
 
     return textId;
@@ -14989,7 +14987,7 @@ uint32 Player::GetDefaultGossipMenuForSource(WorldObject* source)
     switch (source->GetTypeId())
     {
         case TYPEID_UNIT:
-            return source->ToCreature()->GetCreatureInfo()->GossipMenuId;
+            return source->ToCreature()->GetCreatureTemplate()->GossipMenuId;
         case TYPEID_GAMEOBJECT:
             return source->ToGameObject()->GetGOInfo()->GetGossipMenuId();
         default:
@@ -15991,7 +15989,7 @@ bool Player::SatisfyQuestStatus(Quest const* qInfo, bool msg)
 bool Player::SatisfyQuestConditions(Quest const* qInfo, bool msg)
 {
     ConditionList conditions = sConditionMgr->GetConditionsForNotGroupedEntry(CONDITION_SOURCE_TYPE_QUEST_ACCEPT, qInfo->GetQuestId());
-    if (!sConditionMgr->IsPlayerMeetToConditions(this, conditions))
+    if (!sConditionMgr->IsObjectMeetToConditions(this, conditions))
     {
         if (msg)
             SendCanTakeQuestResponse(INVALIDREASON_DONT_HAVE_REQ);
@@ -16149,8 +16147,8 @@ bool Player::SatisfyQuestSeasonal(Quest const* qInfo, bool /*msg*/)
         return true;
 
     uint16 eventId = sGameEventMgr->GetEventIdForQuest(qInfo);
-    if (_seasonalquests.find(eventId) == _seasonalquests.end())
-        return false;
+    if (_seasonalquests.find(eventId) == _seasonalquests.end() || _seasonalquests[eventId].empty())
+        return true;
 
     // if not found in cooldown list
     return _seasonalquests[eventId].find(qInfo->GetQuestId()) == _seasonalquests[eventId].end();
@@ -16484,8 +16482,8 @@ void Player::KilledMonsterCredit(uint32 entry, uint64 guid)
     UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE, real_entry, addkillcount, guid ? GetMap()->GetCreature(guid) : NULL);
     if (Creature* killed = GetMap()->GetCreature(guid))
     {
-        UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE_TYPE, killed->GetCreatureInfo()->type, addkillcount, killed);
-        UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE_TYPE_GUILD, killed->GetCreatureInfo()->type, addkillcount, killed);
+        UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE_TYPE, killed->GetCreatureTemplate()->type, addkillcount, killed);
+        UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_KILL_CREATURE_TYPE_GUILD, killed->GetCreatureTemplate()->type, addkillcount, killed);
     }
 
     for (uint8 i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
@@ -20472,7 +20470,7 @@ void Player::PetSpellInitialize()
 
     WorldPacket data(SMSG_PET_SPELLS, 8+2+4+4+4*MAX_UNIT_ACTION_BAR_INDEX+1+1);
     data << uint64(pet->GetGUID());
-    data << uint16(pet->GetCreatureInfo()->family);         // creature family (required for pet talents)
+    data << uint16(pet->GetCreatureTemplate()->family);         // creature family (required for pet talents)
     data << uint32(0);
     data << uint8(pet->GetReactState()) << uint8(charmInfo->GetCommandState()) << uint16(0);
 
@@ -20566,7 +20564,7 @@ void Player::VehicleSpellInitialize()
 
     WorldPacket data(SMSG_PET_SPELLS, 8 + 2 + 4 + 4 + 4 * 10 + 1 + 1 + cooldownCount * (4 + 2 + 4 + 4));
     data << uint64(veh->GetGUID());
-    data << uint16(veh->GetCreatureInfo()->family);
+    data << uint16(veh->GetCreatureTemplate()->family);
     data << uint32(0);
     // The following three segments are read as one uint32
     data << uint8(veh->GetReactState());
@@ -20584,7 +20582,7 @@ void Player::VehicleSpellInitialize()
         }
 
         ConditionList conditions = sConditionMgr->GetConditionsForVehicleSpell(veh->GetEntry(), spellId);
-        if (!sConditionMgr->IsPlayerMeetToConditions(this, conditions))
+        if (!sConditionMgr->IsObjectMeetToConditions(this, veh, conditions))
         {
             sLog->outDebug(LOG_FILTER_CONDITIONSYS, "VehicleSpellInitialize: conditions not met for Vehicle entry %u spell %u", veh->ToCreature()->GetEntry(), spellId);
             data << uint16(0) << uint8(0) << uint8(i+8);
@@ -20652,7 +20650,7 @@ void Player::CharmSpellInitialize()
     uint8 addlist = 0;
     if (charm->GetTypeId() != TYPEID_PLAYER)
     {
-        //CreatureInfo const* cinfo = charm->ToCreature()->GetCreatureInfo();
+        //CreatureInfo const* cinfo = charm->ToCreature()->GetCreatureTemplate();
         //if (cinfo && cinfo->type == CREATURE_TYPE_DEMON && getClass() == CLASS_WARLOCK)
         {
             for (uint32 i = 0; i < MAX_SPELL_CHARM; ++i)
@@ -20818,9 +20816,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     // not let cheating with start flight in time of logout process || while in combat || has type state: stunned || has type state: root
     if (GetSession()->isLogingOut() || isInCombat() || HasUnitState(UNIT_STATE_STUNNED) || HasUnitState(UNIT_STATE_ROOT))
     {
-        WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
-        data << uint32(ERR_TAXIPLAYERBUSY);
-        GetSession()->SendPacket(&data);
+        GetSession()->SendActivateTaxiReply(ERR_TAXIPLAYERBUSY);
         return false;
     }
 
@@ -20833,26 +20829,20 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
         // not let cheating with start flight mounted
         if (IsMounted())
         {
-            WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
-            data << uint32(ERR_TAXIPLAYERALREADYMOUNTED);
-            GetSession()->SendPacket(&data);
+            GetSession()->SendActivateTaxiReply(ERR_TAXIPLAYERALREADYMOUNTED);
             return false;
         }
 
         if (IsInDisallowedMountForm())
         {
-            WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
-            data << uint32(ERR_TAXIPLAYERSHAPESHIFTED);
-            GetSession()->SendPacket(&data);
+            GetSession()->SendActivateTaxiReply(ERR_TAXIPLAYERSHAPESHIFTED);
             return false;
         }
 
         // not let cheating with start flight in time of logout process || if casting not finished || while in combat || if not use Spell's with EffectSendTaxi
         if (IsNonMeleeSpellCasted(false))
         {
-            WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
-            data << uint32(ERR_TAXIPLAYERBUSY);
-            GetSession()->SendPacket(&data);
+            GetSession()->SendActivateTaxiReply(ERR_TAXIPLAYERBUSY);
             return false;
         }
     }
@@ -20881,9 +20871,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     TaxiNodesEntry const* node = sTaxiNodesStore.LookupEntry(sourcenode);
     if (!node)
     {
-        WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
-        data << uint32(ERR_TAXINOSUCHPATH);
-        GetSession()->SendPacket(&data);
+        GetSession()->SendActivateTaxiReply(ERR_TAXINOSUCHPATH);
         return false;
     }
 
@@ -20896,18 +20884,14 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
             (node->z - GetPositionZ())*(node->z - GetPositionZ()) >
             (2*INTERACTION_DISTANCE)*(2*INTERACTION_DISTANCE)*(2*INTERACTION_DISTANCE))
         {
-            WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
-            data << uint32(ERR_TAXITOOFARAWAY);
-            GetSession()->SendPacket(&data);
+            GetSession()->SendActivateTaxiReply(ERR_TAXITOOFARAWAY);
             return false;
         }
     }
     // node must have pos if taxi master case (npc != NULL)
     else if (npc)
     {
-        WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
-        data << uint32(ERR_TAXIUNSPECIFIEDSERVERERROR);
-        GetSession()->SendPacket(&data);
+        GetSession()->SendActivateTaxiReply(ERR_TAXIUNSPECIFIEDSERVERERROR);
         return false;
     }
 
@@ -20970,9 +20954,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     // in spell case allow 0 model
     if ((mount_display_id == 0 && spellid == 0) || sourcepath == 0)
     {
-        WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
-        data << uint32(ERR_TAXIUNSPECIFIEDSERVERERROR);
-        GetSession()->SendPacket(&data);
+        GetSession()->SendActivateTaxiReply(ERR_TAXIUNSPECIFIEDSERVERERROR);
         _taxi.ClearTaxiDestinations();
         return false;
     }
@@ -20984,9 +20966,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
 
     if (money < totalcost)
     {
-        WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
-        data << uint32(ERR_TAXINOTENOUGHMONEY);
-        GetSession()->SendPacket(&data);
+        GetSession()->SendActivateTaxiReply(ERR_TAXINOTENOUGHMONEY);
         _taxi.ClearTaxiDestinations();
         return false;
     }
@@ -21008,10 +20988,7 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     }
     else
     {
-        WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
-        data << uint32(ERR_TAXIOK);
-        GetSession()->SendPacket(&data);
-        sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent SMSG_ACTIVATETAXIREPLY");
+        GetSession()->SendActivateTaxiReply(ERR_TAXIOK);
         GetSession()->SendDoFlight(mount_display_id, sourcepath);
     }
     return true;
@@ -23196,7 +23173,7 @@ bool Player::isHonorOrXPTarget(Unit* victim)
     {
         if (victim->ToCreature()->isTotem() ||
             victim->ToCreature()->isPet() ||
-            victim->ToCreature()->GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_NO_XP_AT_KILL)
+            victim->ToCreature()->GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_NO_XP_AT_KILL)
                 return false;
     }
     return true;
@@ -24637,7 +24614,7 @@ void Player::LearnPetTalent(uint64 petGuid, uint32 talentId, uint32 talentRank)
     if (!talentTabInfo)
         return;
 
-    CreatureTemplate const *ci = pet->GetCreatureInfo();
+    CreatureTemplate const *ci = pet->GetCreatureTemplate();
 
     if (!ci)
         return;
@@ -24886,7 +24863,7 @@ void Player::BuildPetTalentsInfoData(WorldPacket *data)
 
     data->put<uint32>(pointsPos, unspentTalentPoints);      // put real points
 
-    CreatureTemplate const *ci = pet->GetCreatureInfo();
+    CreatureTemplate const *ci = pet->GetCreatureTemplate();
     if (!ci)
         return;
 

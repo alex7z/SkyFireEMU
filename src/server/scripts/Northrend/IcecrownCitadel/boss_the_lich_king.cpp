@@ -501,13 +501,6 @@ class boss_the_lich_king : public CreatureScript
                 DoCastAOE(SPELL_PLAY_MOVIE, false);
                 me->RemoveUnitMovementFlag(MOVEMENTFLAG_LEVITATING);
                 me->RemoveByteFlag(UNIT_FIELD_BYTES_1, 3, 0x03);
-                float x, y, z;
-                me->GetPosition(x, y, z);
-                // use larger distance for vmap height search than in most other cases
-                float ground_Z = me->GetMap()->GetHeight(x, y, z, true, MAX_FALL_DISTANCE);
-                if (fabs(ground_Z - z) < 0.1f)
-                    return;
-
                 me->GetMotionMaster()->MoveFall();
             }
 
@@ -1229,7 +1222,7 @@ class npc_tirion_fordring_tft : public CreatureScript
 
             void sGossipSelect(Player* /*player*/, uint32 sender, uint32 action)
             {
-                if (me->GetCreatureInfo()->GossipMenuId == sender && !action)
+                if (me->GetCreatureTemplate()->GossipMenuId == sender && !action)
                 {
                     _events.SetPhase(PHASE_INTRO);
                     me->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);

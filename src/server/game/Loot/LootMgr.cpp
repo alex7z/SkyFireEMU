@@ -103,9 +103,7 @@ uint32 LootStore::LoadLootTable()
     QueryResult result = WorldDatabase.PQuery("SELECT entry, item, ChanceOrQuestChance, lootmode, groupid, mincountOrRef, maxcount FROM %s", GetName());
 
     if (!result)
-    {
         return 0;
-}
 
     uint32 count = 0;
 
@@ -340,7 +338,7 @@ LootItem::LootItem(LootStoreItem const& li)
 bool LootItem::AllowedForPlayer(Player const* player) const
 {
     // DB conditions check
-    if (!sConditionMgr->IsPlayerMeetToConditions(const_cast<Player*>(player), conditions))
+    if (!sConditionMgr->IsObjectMeetToConditions(const_cast<Player*>(player), conditions))
         return false;
 
     ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemid);

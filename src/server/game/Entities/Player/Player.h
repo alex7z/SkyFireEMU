@@ -503,23 +503,6 @@ enum PlayerFieldByte2Flags
     PLAYER_FIELD_BYTE2_INVISIBILITY_GLOW    = 0x40
 };
 
-enum ActivateTaxiReplies
-{
-    ERR_TAXIOK                      = 0,
-    ERR_TAXIUNSPECIFIEDSERVERERROR  = 1,
-    ERR_TAXINOSUCHPATH              = 2,
-    ERR_TAXINOTENOUGHMONEY          = 3,
-    ERR_TAXITOOFARAWAY              = 4,
-    ERR_TAXINOVENDORNEARBY          = 5,
-    ERR_TAXINOTVISITED              = 6,
-    ERR_TAXIPLAYERBUSY              = 7,
-    ERR_TAXIPLAYERALREADYMOUNTED    = 8,
-    ERR_TAXIPLAYERSHAPESHIFTED      = 9,
-    ERR_TAXIPLAYERMOVING            = 10,
-    ERR_TAXISAMENODE                = 11,
-    ERR_TAXINOTSTANDING             = 12
-};
-
 enum MirrorTimerType
 {
     FATIGUE_TIMER      = 0,
@@ -1430,7 +1413,7 @@ class Player : public Unit, public GridObject<Player>
         void SendPreparedGossip(WorldObject* source);
         void OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 menuId);
 
-        uint32 GetGossipTextId(uint32 menuId);
+        uint32 GetGossipTextId(uint32 menuId, WorldObject* source);
         uint32 GetGossipTextId(WorldObject* source);
         static uint32 GetDefaultGossipMenuForSource(WorldObject* source);
 
@@ -2373,8 +2356,6 @@ class Player : public Unit, public GridObject<Player>
         void   SaveRecallPosition();
 
         void SetHomebind(WorldLocation const& loc, uint32 area_id);
-
-        uint32 _ConditionErrorMsgId;
 
         // Homebind coordinates
         uint32 _homebindMapId;

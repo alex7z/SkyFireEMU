@@ -24,6 +24,7 @@
 #include "GameObject.h"
 #include "Player.h"
 #include "ObjectAccessor.h"
+#include "ObjectMgr.h"
 #include "WorldSession.h"
 #include "LootMgr.h"
 #include "Object.h"
@@ -96,7 +97,7 @@ void WorldSession::HandleAutostoreLootItemOpcode(WorldPacket & recv_data)
             return;
         }
 
-        objEntry = creature->GetCreatureInfo()->Entry;
+        objEntry = creature->GetCreatureTemplate()->Entry;
         objType = 1;
         loot = &creature->loot;
     }

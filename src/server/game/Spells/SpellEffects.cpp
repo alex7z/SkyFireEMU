@@ -1555,24 +1555,26 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                 m_caster->CastSpell(unitTarget, damage, true);
                 return;
             }
-            // Wild mushroom: detonate
-            /*if(m_spellInfo->Id == 88751)
+            //Wild mushroom: detonate
+            if(m_spellInfo->Id == 88751)
             {
+                std::list<Creature*> templist;
+
                 CellCoord pair(Trinity::ComputeCellCoord(m_caster->GetPositionX(), m_caster->GetPositionY()));
                 Cell cell(pair);
                 cell.SetNoCreate();
 
-                std::list<Creature*> templist;
-                Trinity::AllFriendlyCreaturesInGrid check(me, 47649);
-                Trinity::CreatureListSearcher<Trinity::AllCreaturesOfEntryInRange> searcher(m_caster, templist, check);
+                Trinity::AllFriendlyCreaturesInGrid check(m_caster);
+                Trinity::CreatureListSearcher<Trinity::AllFriendlyCreaturesInGrid> searcher(m_caster, templist, check);
 
-                TypeContainerVisitor<Trinity::CreatureListSearcher<Trinity::AllCreaturesOfEntryInRange>, GridTypeMapContainer> cSearcher(searcher);
-                cell.Visit(pair, cSearcher, *(me->GetMap()), *me, me->GetGridActivationRange());
+                TypeContainerVisitor<Trinity::CreatureListSearcher<Trinity::AllFriendlyCreaturesInGrid>, GridTypeMapContainer> cSearcher(searcher);
+
+                cell.Visit(pair, cSearcher, *(m_caster->GetMap()), *m_caster, m_caster->GetGridActivationRange());
 
                 if (!templist.empty())
                     for (std::list<Creature*>::const_iterator itr = templist.begin(); itr != templist.end(); ++itr)
                     {
-                        // You cannot detonate other people's mushrooms
+                        //You cannot detonate other people's mushrooms
                         if((*itr)->GetOwner() != m_caster)
                             continue;
                         // Find all the enemies
@@ -1582,15 +1584,15 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                         (*itr)->VisitNearbyObject(6.0f, searcher);
                         for (std::list<Unit*>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter)
                         {
-                            // Damage spell
-                            (*itr)->CastSpell((*iter),78777,true);
-                            // Suicide spell
-                            (*itr)->CastSpell((*itr),92853,true);
+                            //Damage spell
+                            (*itr)->CastSpell((*iter), 88747, true);
+                            //Suicide spell
+                            (*itr)->CastSpell((*itr), 92853, true);
                             (*itr)->DisappearAndDie();
                         }
                     }
                     templist.clear();
-            }*/
+            }
             if(m_spellInfo->Id == 1126)
             {
                 if (m_caster->GetTypeId() == TYPEID_PLAYER)
@@ -3427,6 +3429,33 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
 
     TempSummon* summon = NULL;
 
+    // determine how many units should be summoned
+    uint32 numSummons;
+
+    // some spells need to summon many units, for those spells number of summons is stored in effect value
+    // however so far noone found a generic check to find all of those (there's no related data in summonproperties.dbc
+    // and in spell attributes, possibly we need to add a table for those)
+    // so here's a list of MiscValueB values, which is currently most generic check
+    switch (properties->Id)
+    {
+        case 64:
+        case 61:
+        case 1101:
+        case 66:
+        case 648:
+        case 2301:
+        case 1061:
+        case 1261:
+        case 629:
+        case 181:
+        case 715:
+            numSummons = (damage > 0) ? damage : 1;
+            break;
+        default:
+            numSummons = 1;
+            break;
+    }
+
     switch (properties->Category)
     {
         case SUMMON_CATEGORY_WILD:
@@ -3434,7 +3463,7 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
         case SUMMON_CATEGORY_UNK:
             if (properties->Flags & 512)
             {
-                SummonGuardian(effIndex, entry, properties);
+                SummonGuardian(effIndex, entry, properties, numSummons);
                 break;
             }
             switch (properties->Type)
@@ -3443,7 +3472,7 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
                 case SUMMON_TYPE_GUARDIAN:
                 case SUMMON_TYPE_GUARDIAN2:
                 case SUMMON_TYPE_MINION:
-                    SummonGuardian(effIndex, entry, properties);
+                    SummonGuardian(effIndex, entry, properties, numSummons);
                     break;
                 // Summons a vehicle, but doesn't force anyone to enter it (see SUMMON_CATEGORY_VEHICLE)
                 case SUMMON_TYPE_VEHICLE:
@@ -3473,8 +3502,8 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
                     if (!summon || !summon->HasUnitTypeMask(UNIT_MASK_MINION))
                         return;
 
-                    summon->SelectLevel(summon->GetCreatureInfo());       // some summoned creaters have different from 1 DB data for level/hp
-                    summon->SetUInt32Value(UNIT_NPC_FLAGS, summon->GetCreatureInfo()->npcflag);
+                    summon->SelectLevel(summon->GetCreatureTemplate());       // some summoned creaters have different from 1 DB data for level/hp
+                    summon->SetUInt32Value(UNIT_NPC_FLAGS, summon->GetCreatureTemplate()->npcflag);
 
                     summon->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
 
@@ -3485,17 +3514,12 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
                 {
                     float radius = m_spellInfo->Effects[effIndex].CalcRadius();
 
-                    uint32 amount = damage > 0 ? damage : 1;
-                    if (m_spellInfo->Id == 18662 || // Curse of Doom
-                        properties->Id == 2081)     // Mechanical Dragonling, Arcanite Dragonling, Mithril Dragonling TODO: Research on meaning of basepoints
-                        amount = 1;
-
                     if ((properties->Id == 2081 || m_spellInfo->Id == 13258 || m_spellInfo->Id == 13166) && !_CastItem)
                         return;
 
                     TempSummonType summonType = (duration == 0) ? TEMPSUMMON_DEAD_DESPAWN : TEMPSUMMON_TIMED_DESPAWN;
 
-                    for (uint32 count = 0; count < amount; ++count)
+                    for (uint32 count = 0; count < numSummons; ++count)
                     {
                         GetSummonPosition(effIndex, pos, radius, count);
 
@@ -3517,7 +3541,7 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
             }//switch
             break;
         case SUMMON_CATEGORY_PET:
-            SummonGuardian(effIndex, entry, properties);
+            SummonGuardian(effIndex, entry, properties, numSummons);
             break;
         case SUMMON_CATEGORY_PUPPET:
             summon = m_caster->GetMap()->SummonCreature(entry, pos, properties, duration, m_originalCaster, m_spellInfo->Id);
@@ -4226,7 +4250,7 @@ void Spell::EffectSummonPet(SpellEffIndex effIndex)
     {
         SummonPropertiesEntry const* properties = sSummonPropertiesStore.LookupEntry(67);
         if (properties)
-            SummonGuardian(effIndex, petentry, properties);
+            SummonGuardian(effIndex, petentry, properties, 1);
         return;
     }
 
@@ -6108,7 +6132,7 @@ void Spell::EffectStuck(SpellEffIndex /*effIndex*/)
     if (target->isInFlight())
         return;
 
-    target->TeleportTo(target->GetStartPosition(), m_caster == m_caster ? TELE_TO_SPELL : 0);
+    target->TeleportTo(target->GetStartPosition(), TELE_TO_SPELL);
     // homebind location is loaded always
     // target->TeleportTo(target->_homebindMapId, target->_homebindX, target->_homebindY, target->_homebindZ, target->GetOrientation(), (m_caster == m_caster ? TELE_TO_SPELL : 0));
 
@@ -6134,7 +6158,7 @@ void Spell::EffectSummonPlayer(SpellEffIndex /*effIndex*/)
         return;
 
     float x, y, z;
-    m_caster->GetClosePoint(x, y, z, unitTarget->GetObjectSize());
+    m_caster->GetPosition(x, y, z);
 
     unitTarget->ToPlayer()->SetSummonPoint(m_caster->GetMapId(), x, y, z);
 
@@ -6655,7 +6679,7 @@ void Spell::EffectSkinning(SpellEffIndex /*effIndex*/)
     Creature* creature = unitTarget->ToCreature();
     int32 targetLevel = creature->getLevel();
 
-    uint32 skill = creature->GetCreatureInfo()->GetRequiredLootSkill();
+    uint32 skill = creature->GetCreatureTemplate()->GetRequiredLootSkill();
 
     m_caster->ToPlayer()->SendLoot(creature->GetGUID(), LOOT_SKINNING);
     creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
@@ -7554,7 +7578,7 @@ void Spell::EffectGameObjectSetDestructionState(SpellEffIndex effIndex)
     gameObjTarget->SetDestructibleState(GameObjectDestructibleState(m_spellInfo->Effects[effIndex].MiscValue), player, true);
 }
 
-void Spell::SummonGuardian(uint32 i, uint32 entry, SummonPropertiesEntry const* properties)
+void Spell::SummonGuardian(uint32 i, uint32 entry, SummonPropertiesEntry const* properties, uint32 numGuardians)
 {
     Unit* caster = m_originalCaster;
     if (!caster)
@@ -7573,26 +7597,16 @@ void Spell::SummonGuardian(uint32 i, uint32 entry, SummonPropertiesEntry const* 
                 if (uint16 skill202 = caster->ToPlayer()->GetSkillValue(SKILL_ENGINEERING))
                     level = skill202/5;
 
-    // float radius = GetSpellRadiusForFriend(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
     float radius = 5.0f;
-    uint32 amount = damage > 0 ? damage : 1;
     int32 duration = m_spellInfo->GetDuration();
-    switch (m_spellInfo->Id)
-    {
-        case 1122: // Inferno
-            amount = 1;
-            break;
-        case 49028: // Dancing Rune Weapon
-            m_originalCaster->CastSpell(m_originalCaster, 81256, true); // Parry increase
-            break;
-    }
+
     if (Player* modOwner = m_originalCaster->GetSpellModOwner())
         modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_DURATION, duration);
 
     // TempSummonType summonType = (duration == 0) ? TEMPSUMMON_DEAD_DESPAWN : TEMPSUMMON_TIMED_DESPAWN;
     Map* map = caster->GetMap();
 
-    for (uint32 count = 0; count < amount; ++count)
+    for (uint32 count = 0; count < numGuardians; ++count)
     {
         Position pos;
         GetSummonPosition(i, pos, radius, count);

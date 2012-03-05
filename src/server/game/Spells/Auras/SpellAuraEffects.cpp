@@ -413,7 +413,7 @@ pAuraEffectHandler AuraEffectHandler[TOTAL_AURAS]=
 
 AuraEffect::AuraEffect(Aura* base, uint8 effIndex, int32 *baseAmount, Unit* caster):
 m_base(base), m_spellInfo(base->GetSpellInfo()), m_effIndex(effIndex),
-m_baseAmount(baseAmount ? *baseAmount : m_spellInfo->Effects[m_effIndex].BasePoints),
+m_baseAmount(baseAmount ? *baseAmount : m_spellInfo->Effects[effIndex].BasePoints),
 m_canBeRecalculated(true), m_spellmod(NULL), m_isPeriodic(false),
 m_periodicTimer(0), m_tickNumber(0)
 {
@@ -5457,8 +5457,21 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
         }
         case SPELLFAMILY_MAGE:
         {
-            // if (!(mode & AURA_EFFECT_HANDLE_REAL))
-                // break;
+            switch(GetId())
+            {
+                case 79683: // Arcane Missiles
+                {
+                    if (apply)
+                        if (caster)
+                            caster->CastSpell(caster, 79808, true, NULL, NULL, GetCasterGUID()); // Arcane Missiles Aurastate
+                    break;
+                }
+                case 5143: // Arcane Missiles
+                {
+                    caster->RemoveAurasDueToSpell(79808);
+                    break;
+                }
+            }
             break;
         }
         case SPELLFAMILY_PRIEST:
@@ -6293,15 +6306,15 @@ void AuraEffect::HandlePeriodicTriggerSpellAuraTick(Unit* target, Unit* caster) 
                         // move loot to player inventory and despawn target
                         if (caster && caster->GetTypeId() == TYPEID_PLAYER &&
                                 target->GetTypeId() == TYPEID_UNIT &&
-                                target->ToCreature()->GetCreatureInfo()->type == CREATURE_TYPE_GAS_CLOUD)
+                                target->ToCreature()->GetCreatureTemplate()->type == CREATURE_TYPE_GAS_CLOUD)
                         {
                             Player* player = caster->ToPlayer();
                             Creature* creature = target->ToCreature();
                             // missing lootid has been reported on startup - just return
-                            if (!creature->GetCreatureInfo()->SkinLootId)
+                            if (!creature->GetCreatureTemplate()->SkinLootId)
                                 return;
 
-                            player->AutoStoreLoot(creature->GetCreatureInfo()->SkinLootId, LootTemplates_Skinning, true);
+                            player->AutoStoreLoot(creature->GetCreatureTemplate()->SkinLootId, LootTemplates_Skinning, true);
 
                             creature->DespawnOrUnsummon();
                         }
