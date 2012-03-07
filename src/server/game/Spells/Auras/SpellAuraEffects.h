@@ -157,6 +157,7 @@ class AuraEffect
         //  skills & talents
         void HandleAuraModPetTalentsPoints(AuraApplication const* aurApp, uint8 mode, bool apply) const;
         void HandleAuraModSkill(AuraApplication const* aurApp, uint8 mode, bool apply) const;
+        void HandleModCanCastWhileWalking(AuraApplication const* aurApp, uint8 mode, bool apply) const;
         //  movement
         void HandleAuraMounted(AuraApplication const* aurApp, uint8 mode, bool apply) const;
         void HandleAuraAllowFlight(AuraApplication const* aurApp, uint8 mode, bool apply) const;
@@ -212,6 +213,7 @@ class AuraEffect
         void HandleModSpellHealingPercentFromStat(AuraApplication const* aurApp, uint8 mode, bool apply) const;
         void HandleModSpellDamagePercentFromAttackPower(AuraApplication const* aurApp, uint8 mode, bool apply) const;
         void HandleModSpellHealingPercentFromAttackPower(AuraApplication const* aurApp, uint8 mode, bool apply) const;
+        void HandleAuraModSpellPowerPercent(AuraApplication const * aurApp, uint8 mode, bool apply) const;
         void HandleModHealingDone(AuraApplication const* aurApp, uint8 mode, bool apply) const;
         void HandleModTotalPercentStat(AuraApplication const* aurApp, uint8 mode, bool apply) const;
         void HandleAuraModResistenceOfStatPercent(AuraApplication const* aurApp, uint8 mode, bool apply) const;

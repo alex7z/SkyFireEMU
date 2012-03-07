@@ -1840,14 +1840,14 @@ void Unit::CalcHealAbsorb(Unit* victim, const SpellInfo *healSpell, uint32 &heal
     if (!healAmount)
         return;
 
-    int32 RemainingHeal = healAmount;
+    int32 remainingHeal = healAmount;
 
     // Need remove expired auras after
     bool existExpired = false;
 
     // absorb without mana cost
     AuraEffectList const& vHealAbsorb = victim->GetAuraEffectsByType(SPELL_AURA_SCHOOL_HEAL_ABSORB);
-    for (AuraEffectList::const_iterator i = vHealAbsorb.begin(); i != vHealAbsorb.end() && RemainingHeal > 0; ++i)
+    for (AuraEffectList::const_iterator i = vHealAbsorb.begin(); i != vHealAbsorb.end() && remainingHeal > 0; ++i)
     {
         if (!((*i)->GetMiscValue() & healSpell->SchoolMask))
             continue;
@@ -1864,10 +1864,10 @@ void Unit::CalcHealAbsorb(Unit* victim, const SpellInfo *healSpell, uint32 &heal
 
         // currentAbsorb - damage can be absorbed by shield
         // If need absorb less damage
-        if (RemainingHeal < currentAbsorb)
-            currentAbsorb = RemainingHeal;
+        if (remainingHeal < currentAbsorb)
+            currentAbsorb = remainingHeal;
 
-        RemainingHeal -= currentAbsorb;
+        remainingHeal -= currentAbsorb;
 
         // Reduce shield amount
         (*i)->SetAmount((*i)->GetAmount() - currentAbsorb);
@@ -1879,16 +1879,13 @@ void Unit::CalcHealAbsorb(Unit* victim, const SpellInfo *healSpell, uint32 &heal
     // Necrotic Strike
     if (victim->HasAura(73975))
     {
-        if (Aura* aur = GetAura(73975))
-        {
-            int32 heal = int32(victim->GetAbsorbHeal());
-            RemainingHeal -= heal;
-        }
+        int32 healAbsorb = int32(victim->GetHealAbsorb());
+        remainingHeal -= healAbsorb;
     }
 
     // No negative heal
-    if (RemainingHeal < 0)
-        RemainingHeal = 0;
+    if (remainingHeal < 0)
+        remainingHeal = 0;
 
     // Remove all expired absorb auras
     if (existExpired)
@@ -1897,8 +1894,6 @@ void Unit::CalcHealAbsorb(Unit* victim, const SpellInfo *healSpell, uint32 &heal
         {
             AuraEffect* auraEff = *i;
             ++i;
-            if (auraEff->GetId() != 73975)     // if aura id doesnt = necro strike
-            // undefined auras
             if (auraEff->GetAmount() <= 0)
             {
                 uint32 removedAuras = victim->m_removedAurasCount;
@@ -1909,17 +1904,15 @@ void Unit::CalcHealAbsorb(Unit* victim, const SpellInfo *healSpell, uint32 &heal
         }
     }
 
-    absorb = RemainingHeal > 0 ? (healAmount - RemainingHeal) : healAmount;
-    healAmount = RemainingHeal;
+    absorb = remainingHeal > 0 ? (healAmount - remainingHeal) : healAmount;
+    healAmount = remainingHeal;
 
-    if (Aura* aur = GetAura(73975))              // necrotic strike
+    // Necrotic Strike
+    if (victim->HasAura(73975))
     {
-        int32 getabsorb = GetAbsorbHeal();       // Get initial absorb value
-        int32 subtract = getabsorb - absorb;     // Define subtraction
-        SetAbsorbHeal(subtract);                 // set absorb heal to the new value
-        if (subtract <= 0)                       // remove if empty - 0 absorb left
-        victim->RemoveAura(73975);
-        SetAbsorbHeal(0);                        // reset absorb amount after consumed
+        SetHealAbsorb(GetHealAbsorb() - absorb);
+        if (GetHealAbsorb() <= 0.0f)
+            victim->RemoveAura(73975);
     }
 }
 
@@ -3093,6 +3086,33 @@ void Unit::InterruptNonMeleeSpells(bool withDelayed, uint32 spell_id, bool withI
     // channeled spells are interrupted if they are not finished, even if they are delayed
     if (m_currentSpells[CURRENT_CHANNELED_SPELL] && (!spell_id || m_currentSpells[CURRENT_CHANNELED_SPELL]->m_spellInfo->Id == spell_id))
         InterruptSpell(CURRENT_CHANNELED_SPELL, true, true);
+}
+
+bool Unit::CanCastWhileWalking(uint32 spell_id)
+{
+    SpellInfo const* spell = sSpellMgr->GetSpellInfo(spell_id);
+    
+    if (!spell)
+        return false;
+
+    bool ret = false;
+    SkillLineAbilityMapBounds skills = sSpellMgr->GetSkillLineAbilityMapBounds(spell_id);
+    for (SkillLineAbilityMap::const_iterator itr = skills.first; itr != skills.second; ++itr)
+    {
+        if (itr->second->skillId > 0)
+            ret = true;
+    }
+
+    if (!ret)
+        return false;
+    
+    AuraEffectList const& auraList = GetAuraEffectsByType(SPELL_AURA_CAST_WHILE_WALKING);
+    for (Unit::AuraEffectList::const_iterator itr = auraList.begin(); itr != auraList.end(); ++itr)
+    {
+        if ((*itr)->GetSpellInfo()->Effects[(*itr)->GetEffIndex()].SpellClassMask.HasFlag(spell->GetSpellClassOptions()->SpellFamilyFlags))
+            return true;
+    }
+    return false;
 }
 
 Spell* Unit::FindCurrentSpellBySpellId(uint32 spell_id) const
@@ -17896,9 +17916,9 @@ void SpellModifier::Recalculate(SpellInfo const *spellInfo, Unit* target)
 
 void Unit::SetEclipsePower(int32 power)
 {
-    eclipse = power;
+    _eclipse = power;
 
-    if (eclipse == 0)
+    if (_eclipse == 0)
     {
         if (HasAura(67483))
             RemoveAurasDueToSpell(67483);
@@ -17906,19 +17926,19 @@ void Unit::SetEclipsePower(int32 power)
             RemoveAurasDueToSpell(67484);
     }
 
-    if (eclipse >= 100)
+    if (_eclipse >= 100)
     {
         if (HasAura(48518))
             RemoveAurasDueToSpell(48518);
-        eclipse = 100;
+        _eclipse = 100;
         AddAura(48517, ToPlayer());
     }
 
-    if (eclipse <= -100)
+    if (_eclipse <= -100)
     {
         if (HasAura(48517))
             RemoveAurasDueToSpell(48517);
-        eclipse = -100;
+        _eclipse = -100;
         AddAura(48518, ToPlayer());
     }
 
@@ -17926,7 +17946,7 @@ void Unit::SetEclipsePower(int32 power)
     data.append(GetPackGUID());
     data << int32(1);
     data << int8(POWER_ECLIPSE);
-    data << int32(eclipse);
+    data << int32(_eclipse);
     SendMessageToSet(&data, GetTypeId() == TYPEID_PLAYER ? true : false);
 }
 
