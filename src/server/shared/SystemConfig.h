@@ -23,7 +23,7 @@
 #include "Define.h"
 #include "revision.h"
 
-#define _PACKAGENAME "SkyFireEMU"
+#define _PACKAGENAME "300murlocs"
 
 #if TRINITY_ENDIAN == TRINITY_BIGENDIAN
 # define _ENDIAN_STRING "big-endian"
@@ -33,7 +33,7 @@
 
 #define _CLIENT_BUILD_REVISION "4.0.6a - 13623"
 
-#define _CLIENT_BUILD_REVISION_2 "4.0.6a - 13623 (c)ProjectSkyFire <http://www.projectskyfire.org>"  // DO NOT REMOVE OR ALTER OUR COPYRIGHTS!
+#define _CLIENT_BUILD_REVISION_2 "4.0.6a - 13623 (c) 2012 300murlocs <http://www.300murlocs.com>"
 
 #if PLATFORM == PLATFORM_WINDOWS
 # ifdef _WIN64
