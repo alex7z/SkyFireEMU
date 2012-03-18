@@ -1056,9 +1056,9 @@ bool Object::PrintIndexError(uint32 index, bool set) const
     return false;
 }
 
-bool Position::HasInLine(Unit const* target, float distance, float width) const
+bool Position::HasInLine(WorldObject const* target, float width) const
 {
-    if (!HasInArc(M_PI, target) || !target->IsWithinDist3d(m_positionX, m_positionY, m_positionZ, distance))
+    if (!HasInArc(M_PI, target))
         return false;
     width += target->GetObjectSize();
     float angle = GetRelativeAngle(target);
@@ -1495,14 +1495,14 @@ bool WorldObject::IsInBetween(const WorldObject* obj1, const WorldObject* obj2, 
     return (size * size) >= GetExactDist2dSq(obj1->GetPositionX() + cos(angle) * dist, obj1->GetPositionY() + sin(angle) * dist);
 }
 
-bool WorldObject::isInFront(WorldObject const* target, float distance,  float arc) const
+bool WorldObject::isInFront(WorldObject const* target,  float arc) const
 {
-    return IsWithinDist(target, distance) && HasInArc(arc, target);
+    return HasInArc(arc, target);
 }
 
-bool WorldObject::isInBack(WorldObject const* target, float distance, float arc) const
+bool WorldObject::isInBack(WorldObject const* target, float arc) const
 {
-    return IsWithinDist(target, distance) && !HasInArc(2 * M_PI - arc, target);
+    return !HasInArc(2 * M_PI - arc, target);
 }
 
 void WorldObject::GetRandomPoint(const Position &pos, float distance, float &rand_x, float &rand_y, float &rand_z) const
@@ -2244,13 +2244,13 @@ TempSummon* WorldObject::SummonCreature(uint32 entry, const Position &pos, TempS
 Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetType petType, uint32 duration, PetSlot slotID)
 {
     Pet* pet = new Pet(this, petType);
-
-    if (petType == SUMMON_PET && pet->LoadPetFromDB(this, entry, 0, slotID != PET_SLOT_UNK_SLOT, slotID))
+    //summoned pets always non-curent!
+    if (petType == SUMMON_PET && pet->LoadPetFromDB(this, entry, 0, false, slotID))
     {
         if (duration > 0)
             pet->SetDuration(duration);
 
-        return NULL;
+        return pet;
     }
 
     // petentry == 0 for hunter "call pet" (current pet summoned if any)

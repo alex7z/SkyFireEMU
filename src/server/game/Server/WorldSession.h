@@ -295,7 +295,7 @@ class WorldSession
 
         void SendAttackStop(Unit const* enemy);
 
-        void SendBattlegGroundList(uint64 guid, BattlegroundTypeId bgTypeId);
+        void SendBattleGroundList(uint64 guid, BattlegroundTypeId bgTypeId);
 
         void SendTradeStatus(TradeStatus status);
         void SendUpdateTrade(bool trader_data = true);
@@ -609,7 +609,7 @@ class WorldSession
         void HandleBuyStableSlot(WorldPacket& recvPacket);
         void HandleStableRevivePet(WorldPacket& recvPacket);
         void HandleStableSwapPet(WorldPacket& recvPacket);
-        void HandleStableSwapPetCallback(PreparedQueryResult result, uint32 petnumber);
+        void HandleStableSwapPetCallback(PreparedQueryResult result, uint8 petnumber);
 
         void HandleDuelAcceptedOpcode(WorldPacket& recvPacket);
         void HandleDuelCancelledOpcode(WorldPacket& recvPacket);

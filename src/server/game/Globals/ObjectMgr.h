@@ -341,12 +341,7 @@ std::string GetScriptCommandName(ScriptCommands command);
 struct SpellClickInfo
 {
     uint32 spellId;
-    uint32 questStart;                                      // quest start (quest must be active or rewarded for spell apply)
-    uint32 questEnd;                                        // quest end (quest must not be rewarded for spell apply)
-    bool   questStartCanActive;                             // if true then quest start can be active (not only rewarded)
     uint8 castFlags;
-    uint32 auraRequired;
-    uint32 auraForbidden;
     SpellClickUserTypes userType;
 
     // helpers
@@ -393,6 +388,7 @@ struct SkyFireStringLocale
 {
     StringVector Content;
 };
+
 
 typedef std::map<uint64, uint64> LinkedRespawnContainer;
 typedef UNORDERED_MAP<uint32, CreatureData> CreatureDataContainer;
@@ -1363,7 +1359,6 @@ class ObjectMgr
 
         std::set<uint32> _difficultyEntries[MAX_DIFFICULTY - 1]; // already loaded difficulty 1 value in creatures, used in CheckCreatureTemplate
         std::set<uint32> _hasDifficultyEntries[MAX_DIFFICULTY - 1]; // already loaded creatures with difficulty 1 values, used in CheckCreatureTemplate
-
 
         enum CreatureLinkedRespawnType
         {
