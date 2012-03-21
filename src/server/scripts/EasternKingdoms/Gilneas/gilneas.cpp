@@ -575,7 +575,7 @@ public:
 class go_merchant_square_door : public GameObjectScript
 {
 public:
-    go_merchant_square_door() : GameObjectScript("go_merchant_square_door") {}
+    go_merchant_square_door() : GameObjectScript("go_merchant_square_door") { aPlayer = NULL; }
 
     float x, y, z, wx, wy, angle, tQuestCredit;
     bool opened;
