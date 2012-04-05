@@ -29,7 +29,8 @@
 #include "AddonMgr.h"
 #include "DatabaseEnv.h"
 #include "World.h"
-//#include "WorldPacket.h"
+#include "WorldPacket.h"
+#include "Cryptography/BigNumber.h"
 
 struct ItemTemplate;
 struct AuctionEntry;
@@ -200,7 +201,7 @@ class CharacterCreateInfo
         uint8 HairColor;
         uint8 FacialHair;
         uint8 OutfitId;
-        WorldPacket& Data;
+        WorldPacket Data;
 
         /// Server side data
         uint8 CharCount;
@@ -215,7 +216,6 @@ class CharacterCreateInfo
 /// Player session in the World
 class WorldSession
 {
-    friend class CharacterHandler;
     public:
         WorldSession(uint32 id, WorldSocket*sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter);
         ~WorldSession();
@@ -309,7 +309,7 @@ class WorldSession
         // Pet
         void SendPetNameQuery(uint64 guid, uint32 petnumber);
         void SendStablePet(uint64 guid);
-        void SendStablePetCallback(QueryResult result, uint64 guid);
+        void SendStablePetCallback(PreparedQueryResult result, uint64 guid);
         void SendStableResult(uint8 guid);
         bool CheckStableMaster(uint64 guid);
 
@@ -603,13 +603,13 @@ class WorldSession
         void HandleBinderActivateOpcode(WorldPacket& recvPacket);
         void HandleListStabledPetsOpcode(WorldPacket& recvPacket);
         void HandleStablePet(WorldPacket& recvPacket);
-        void HandleStablePetCallback(QueryResult result);
+        void HandleStablePetCallback(PreparedQueryResult result);
         void HandleUnstablePet(WorldPacket& recvPacket);
-        void HandleUnstablePetCallback(QueryResult result, uint32 petnumber);
+        void HandleUnstablePetCallback(PreparedQueryResult result, uint32 petnumber);
         void HandleBuyStableSlot(WorldPacket& recvPacket);
         void HandleStableRevivePet(WorldPacket& recvPacket);
         void HandleStableSwapPet(WorldPacket& recvPacket);
-        void HandleStableSwapPetCallback(QueryResult result, uint8 petnumber);
+        void HandleStableSwapPetCallback(PreparedQueryResult result, uint32 petnumber);
 
         void HandleDuelAcceptedOpcode(WorldPacket& recvPacket);
         void HandleDuelCancelledOpcode(WorldPacket& recvPacket);
@@ -929,12 +929,12 @@ class WorldSession
 
         PreparedQueryResultFuture _charEnumCallback;
         PreparedQueryResultFuture _addIgnoreCallback;
+        PreparedQueryResultFuture _stablePetCallback;
         QueryCallback<PreparedQueryResult, std::string> _charRenameCallback;
         QueryCallback<PreparedQueryResult, std::string> _addFriendCallback;
-        QueryCallback<QueryResult, uint32> _stablePetCallback;
-        QueryCallback<QueryResult, uint32> _unstablePetCallback;
-        QueryCallback<QueryResult, uint32> _stableSwapCallback;
-        QueryCallback<QueryResult, uint64> _sendStabledPetCallback;
+        QueryCallback<PreparedQueryResult, uint32> _unstablePetCallback;
+        QueryCallback<PreparedQueryResult, uint32> _stableSwapCallback;
+        QueryCallback<PreparedQueryResult, uint64> _sendStabledPetCallback;
         QueryCallback<PreparedQueryResult, CharacterCreateInfo*, true> _charCreateCallback;
         QueryResultHolderFuture _charLoginCallback;
 
