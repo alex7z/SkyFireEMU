@@ -20,11 +20,8 @@ else()
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
   message(STATUS "MSVC: Enabled large address awareness")
 
-  # Test if we need SSE2-support
-  if(USE_SFMT)
-    add_definitions(/arch:SSE2)
-    message(STATUS "MSVC: Enabled SSE2 support")
-  endif()
+  add_definitions(/arch:SSE2)
+  message(STATUS "MSVC: Enabled SSE2 support")
 endif()
 
 # Set build-directive (used in core to tell which buildtype we used)
@@ -38,7 +35,7 @@ add_definitions(-D_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES)
 message(STATUS "MSVC: Overloaded standard names")
 
 # Ignore warnings about older, less secure functions
-add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+add_definitions( "/W3 /D_CRT_SECURE_NO_WARNINGS /wd4996 /wd4355 /wd4244 /wd4985 /wd4267 /wd4619 /wd4820 /wd4986 /wd4514 /wd4710 /wd4668 /wd4365 /wd4005 /wd4640 /wd4242 /wd4711 /wd4738 /wd4625 /wd4626 /wd4061 /wd4100 /wd4265")
 message(STATUS "MSVC: Disabled NON-SECURE warnings")
 
 #Ignore warnings about POSIX deprecation

@@ -806,10 +806,10 @@ void BattlegroundMgr::CreateInitialBattlegrounds()
         CreateBattlegroundData data;
         data.bgTypeId = BattlegroundTypeId(bgTypeID_);
         data.IsArena = (bl->type == TYPE_ARENA);
-        data.MinPlayersPerTeam = fields[1].GetUInt32();
-        data.MaxPlayersPerTeam = fields[2].GetUInt32();
-        data.LevelMin = fields[3].GetUInt32();
-        data.LevelMax = fields[4].GetUInt32();
+        data.MinPlayersPerTeam = fields[1].GetUInt16();
+        data.MaxPlayersPerTeam = fields[2].GetUInt16();
+        data.LevelMin = fields[3].GetUInt8();
+        data.LevelMax = fields[4].GetUInt8();
         //check values from DB
         if (data.MaxPlayersPerTeam == 0 || data.MinPlayersPerTeam == 0 || data.MinPlayersPerTeam > data.MaxPlayersPerTeam)
         {
@@ -915,8 +915,8 @@ void BattlegroundMgr::BuildBattlegroundListPacket(WorldPacket *data, uint64 guid
     uint32 winner_arena = player->GetRandomWinner() ? BG_REWARD_WINNER_ARENA_LAST : BG_REWARD_WINNER_ARENA_FIRST;
     uint32 loser_kills = player->GetRandomWinner() ? BG_REWARD_LOSER_HONOR_LAST : BG_REWARD_LOSER_HONOR_FIRST;
 
-    winner_kills = Trinity::Honor::hk_honor_at_level(player->getLevel(), float(winner_kills));
-    loser_kills = Trinity::Honor::hk_honor_at_level(player->getLevel(), float(loser_kills));
+    winner_kills = Skyfire::Honor::hk_honor_at_level(player->getLevel(), float(winner_kills));
+    loser_kills = Skyfire::Honor::hk_honor_at_level(player->getLevel(), float(loser_kills));
 
     data->Initialize(SMSG_BATTLEFIELD_LIST);
     *data << uint64(guid);                                  // battlemaster guid

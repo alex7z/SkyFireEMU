@@ -48,7 +48,7 @@ extern int m_ServiceStatus;
 #endif
 
 /// Handle worldserver's termination signals
-class WorldServerSignalHandler : public Trinity::SignalHandler
+class WorldServerSignalHandler : public Skyfire::SignalHandler
 {
     public:
         virtual void HandleSignal(int SigNum)
@@ -120,22 +120,13 @@ int Master::Run()
     sLog->outString("%s (worldserver-daemon)", _FULLVERSION);
     sLog->outString("<Ctrl-C> to stop.\n");
 
-    sLog->outString(" ");
     sLog->outString("   ______  __  __  __  __  ______ __  ______  ______ ");
     sLog->outString("  /\\  ___\\/\\ \\/ / /\\ \\_\\ \\/\\  ___/\\ \\/\\  == \\/\\  ___\\ ");
     sLog->outString("  \\ \\___  \\ \\  _'-\\ \\____ \\ \\  __\\ \\ \\ \\  __<\\ \\  __\\ ");
     sLog->outString("   \\/\\_____\\ \\_\\ \\_\\/\\_____\\ \\_\\  \\ \\_\\ \\_\\ \\_\\ \\_____\\ ");
     sLog->outString("    \\/_____/\\/_/\\/_/\\/_____/\\/_/   \\/_/\\/_/ /_/\\/_____/ ");
     sLog->outString("  Project SkyFireEmu 2012(c) Open-sourced Game Emulation ");
-    sLog->outString("           <http://www.projectskyfire.org/> ");
-    sLog->outString(" ");
-
-#ifdef USE_SFMT_FOR_RNG
-    sLog->outString("\n");
-    sLog->outString("SFMT has been enabled as the random number generator, if worldserver");
-    sLog->outString("freezes or crashes randomly, first, try disabling SFMT in CMAKE configuration");
-    sLog->outString("\n");
-#endif //USE_SFMT_FOR_RNG
+    sLog->outString("           <http://www.projectskyfire.org/> \n");
 
     /// worldserver PID file creation
     std::string pidfile = ConfigMgr::GetStringDefault("PidFile", "");
@@ -270,7 +261,11 @@ int Master::Run()
     LoginDatabase.DirectPExecute("UPDATE realmlist SET color = color & ~%u, population = 0 WHERE id = '%u'", REALM_FLAG_INVALID, realmID);
 
     sLog->outString("%s (worldserver-daemon) ready...", _FULLVERSION);
-    sWorldSocketMgr->Wait();
+
+    // when the main thread closes the singletons get unloaded
+    // since worldrunnable uses them, it will crash if unloaded after master
+    world_thread.wait();
+    rar_thread.wait();
 
     if (soap_thread)
     {
@@ -281,11 +276,6 @@ int Master::Run()
 
     // set server offline
     LoginDatabase.DirectPExecute("UPDATE realmlist SET color = color | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, realmID);
-
-    // when the main thread closes the singletons get unloaded
-    // since worldrunnable uses them, it will crash if unloaded after master
-    world_thread.wait();
-    rar_thread.wait();
 
     ///- Clean database before leaving
     clearOnlineAccounts();

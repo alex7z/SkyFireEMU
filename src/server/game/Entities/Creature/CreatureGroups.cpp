@@ -102,7 +102,7 @@ void FormationMgr::LoadCreatureFormations()
         group_member                        = new FormationInfo();
         group_member->leaderGUID            = fields[0].GetUInt32();
         uint32 memberGUID                   = fields[1].GetUInt32();
-        group_member->groupAI               = fields[4].GetUInt8();
+        group_member->groupAI               = fields[4].GetUInt32();
         //If creature is group leader we may skip loading of dist/angle
         if (group_member->leaderGUID != memberGUID)
         {
@@ -232,8 +232,8 @@ void CreatureGroup::LeaderMoveTo(float x, float y, float z)
         float dy = y + sin(angle + pathangle) * dist;
         float dz = z;
 
-        Trinity::NormalizeMapCoord(dx);
-        Trinity::NormalizeMapCoord(dy);
+        Skyfire::NormalizeMapCoord(dx);
+        Skyfire::NormalizeMapCoord(dy);
 
         member->UpdateGroundPositionZ(dx, dy, dz);
 

@@ -36,7 +36,7 @@
 template<>
 void RandomMovementGenerator<Creature>::SetRandomLocation(Creature &creature)
 {
-    float respX, respY, respZ, respO, currZ, destX, destY, destZ, travelDistZ;
+    float respX, respY, respZ, respO, destX, destY, destZ, travelDistZ;
     creature.GetHomePosition(respX, respY, respZ, respO);
     Map const* map = creature.GetBaseMap();
 
@@ -52,8 +52,8 @@ void RandomMovementGenerator<Creature>::SetRandomLocation(Creature &creature)
     destY = respY + distanceY;
 
     // prevent invalid coordinates generation
-    Trinity::NormalizeMapCoord(destX);
-    Trinity::NormalizeMapCoord(destY);
+    Skyfire::NormalizeMapCoord(destX);
+    Skyfire::NormalizeMapCoord(destY);
 
     travelDistZ = distanceX*distanceX + distanceY*distanceY;
 

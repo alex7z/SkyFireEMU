@@ -192,8 +192,8 @@ class spell_gen_cannibalize : public SpellScriptLoader
                 float max_range = GetSpellInfo()->GetMaxRange(false);
                 WorldObject* result = NULL;
                 // search for nearby enemy corpse in range
-                Trinity::AnyDeadUnitSpellTargetInRangeCheck check(caster, max_range, GetSpellInfo(), TARGET_CHECK_ENEMY);
-                Trinity::WorldObjectSearcher<Trinity::AnyDeadUnitSpellTargetInRangeCheck> searcher(caster, result, check);
+                Skyfire::AnyDeadUnitSpellTargetInRangeCheck check(caster, max_range, GetSpellInfo(), TARGET_CHECK_ENEMY);
+                Skyfire::WorldObjectSearcher<Skyfire::AnyDeadUnitSpellTargetInRangeCheck> searcher(caster, result, check);
                 caster->GetMap()->VisitFirstFound(caster->m_positionX, caster->m_positionY, max_range, searcher);
                 if (!result)
                     return SPELL_FAILED_NO_EDIBLE_CORPSES;
@@ -1327,6 +1327,11 @@ class spell_gen_launch : public SpellScriptLoader
         }
 };
 
+enum VehicleScaling
+{
+    SPELL_GEAR_SCALING      = 66668,
+};
+
 class spell_gen_vehicle_scaling : public SpellScriptLoader
 {
     public:
@@ -1336,19 +1341,21 @@ class spell_gen_vehicle_scaling : public SpellScriptLoader
         {
             PrepareAuraScript(spell_gen_vehicle_scaling_AuraScript);
 
+            bool Load()
+            {
+                return GetCaster() && GetCaster()->GetTypeId() == TYPEID_PLAYER;
+            }
+
             void CalculateAmount(AuraEffect const* /*aurEff*/, int32& amount, bool& /*canBeRecalculated*/)
             {
                 Unit* caster = GetCaster();
-                if (!caster || !caster->ToPlayer())
-                    return;
-
                 float factor;
                 uint16 baseItemLevel;
 
                 // TODO: Reserach coeffs for different vehicles
                 switch (GetId())
                 {
-                    case 66668:
+                    case SPELL_GEAR_SCALING:
                         factor = 1.0f;
                         baseItemLevel = 205;
                         break;
