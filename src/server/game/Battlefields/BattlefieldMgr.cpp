@@ -53,18 +53,18 @@ void BattlefieldMgr::InitBattlefield()
         sLog->outString("Battlefield : Wintergrasp successfully initiated.");
     }
 
-    //pBf = new BattlefieldTB;
-    //// respawn, init variables
-    //if (!pBf->SetupBattlefield())
-    //{
-    //    sLog->outDebug(LOG_FILTER_BATTLEFIELD, "Battlefield : Tol Barad init failed.");
-    //    delete pBf;
-    //}
-    //else
-    //{
-    //    m_BattlefieldSet.push_back(pBf);
-    //    sLog->outDebug(LOG_FILTER_BATTLEFIELD, "Battlefield : Tol Barad successfully initiated.");
-    //}
+    pBf = new BattlefieldTB;
+    // respawn, init variables
+    if (!pBf->SetupBattlefield())
+    {
+        sLog->outDebug(LOG_FILTER_BATTLEFIELD, "Battlefield : Tol Barad init failed.");
+        delete pBf;
+    }
+    else
+    {
+        m_BattlefieldSet.push_back(pBf);
+        sLog->outDebug(LOG_FILTER_BATTLEFIELD, "Battlefield : Tol Barad successfully initiated.");
+    }
 }
 
 void BattlefieldMgr::AddZone(uint32 zoneid, Battlefield* handle)
