@@ -545,25 +545,32 @@ public:
 class go_merchant_square_door : public GameObjectScript
 {
 public:
-    go_merchant_square_door() : GameObjectScript("go_merchant_square_door") {}
-
     float x, y, z, wx, wy, angle, tQuestCredit;
     bool opened;
     uint8 spawnKind;
-    Player* aPlayer;
-    GameObject* go;
+    uint32 aPlayer;
     uint32 DoorTimer;
+    uint32 QuestCreditTimer;
+
+    go_merchant_square_door() : GameObjectScript("go_merchant_square_door")
+    {
+        aPlayer = 0;
+        opened = false;
+        spawnKind = 0;
+        DoorTimer = 0;
+        QuestCreditTimer = 0;
+    }
 
     bool OnGossipHello(Player* player, GameObject* go)
     {
         if (player->GetQuestStatus(QUEST_EVAC_MERC_SQUA) == QUEST_STATUS_INCOMPLETE && go->GetGoState() == GO_STATE_READY)
         {
-            aPlayer          = player;
-            opened           = 1;
-            tQuestCredit     = 2500;
+            aPlayer          = player->GetGUIDLow();
+            opened           = true;
+            QuestCreditTimer = 2500;
             go->SetGoState(GO_STATE_ACTIVE);
             DoorTimer = DOOR_TIMER;
-            spawnKind = urand(1, 3); //1, 2=citizen, 3=citizen&worgen (66%, 33%)
+            spawnKind = urand(0, 2) + 1; //1, 2=citizen, 3=citizen&worgen (66%, 33%)
             angle = go->GetOrientation();
             x = go->GetPositionX()-cos(angle)*2;
             y = go->GetPositionY()-sin(angle)*2;
@@ -575,7 +582,7 @@ public:
             {
                 if (Creature* spawnedCreature = go->SummonCreature(NPC_FRIGHTENED_CITIZEN_1, x, y, z, angle, TEMPSUMMON_TIMED_DESPAWN, SUMMON1_TTL))
                 {
-                    spawnedCreature->SetPhaseMask(6, 1);
+                    spawnedCreature->SetPhaseMask(6, true);
                     spawnedCreature->Respawn(1);
                 }
             }
@@ -583,7 +590,7 @@ public:
             {
                 if (Creature* spawnedCreature = go->SummonCreature(NPC_FRIGHTENED_CITIZEN_2, x, y, z, angle, TEMPSUMMON_TIMED_DESPAWN, SUMMON1_TTL))
                 {
-                    spawnedCreature->SetPhaseMask(6, 1);
+                    spawnedCreature->SetPhaseMask(6, true);
                     spawnedCreature->Respawn(1);
                 }
             }
@@ -594,33 +601,40 @@ public:
 
     void OnUpdate(GameObject* go, uint32 diff)
     {
-        if (opened == 1)
+        if (opened && aPlayer)
         {
-            if (tQuestCredit <= ((float)diff/8))
+            if (QuestCreditTimer <= diff)
             {
-                opened = 0;
-                aPlayer->KilledMonsterCredit(35830, 0);
-                if (spawnKind == 3)
+                Player* plr = sObjectAccessor->GetPlayer(go, aPlayer);
+                opened = false;
+                QuestCreditTimer = 0;
+                if (plr)
                 {
-                    if (Creature* spawnedCreature = go->SummonCreature(NPC_RAMPAGING_WORGEN_2, wx, wy, z, angle, TEMPSUMMON_TIMED_DESPAWN, SUMMON1_TTL))
+                    plr->KilledMonsterCredit(35830, 0);
+                    if (spawnKind == 3)
                     {
-                        spawnedCreature->SetPhaseMask(6, 1);
-                        spawnedCreature->Respawn(1);
-                        spawnedCreature->getThreatManager().resetAllAggro();
-                        aPlayer->AddThreat(spawnedCreature, 1.0f);
-                        spawnedCreature->AddThreat(aPlayer, 1.0f);
+                        if (Creature* spawnedCreature = go->SummonCreature(NPC_RAMPAGING_WORGEN_2, wx, wy, z, angle, TEMPSUMMON_TIMED_DESPAWN, SUMMON1_TTL))
+                        {
+                            spawnedCreature->SetPhaseMask(6, true);
+                            spawnedCreature->Respawn(1);
+                            spawnedCreature->getThreatManager().resetAllAggro();
+                            plr->AddThreat(spawnedCreature, 1.0f);
+                            spawnedCreature->AddThreat(plr, 1.0f);
+                        }
                     }
                 }
             }
-            else tQuestCredit -= ((float)diff/8);
+            else
+                QuestCreditTimer -= diff;
         }
-        if (DoorTimer <= diff)
-            {
-                if (go->GetGoState() == GO_STATE_ACTIVE)
-                    go->SetGoState(GO_STATE_READY);
 
-                DoorTimer = DOOR_TIMER;
-            }
+        if (DoorTimer <= diff)
+        {
+            if (go->GetGoState() == GO_STATE_ACTIVE)
+                go->SetGoState(GO_STATE_READY);
+
+            DoorTimer = DOOR_TIMER;
+        }
         else
             DoorTimer -= diff;
     }
