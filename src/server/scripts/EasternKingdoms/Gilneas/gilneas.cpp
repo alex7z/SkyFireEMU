@@ -605,7 +605,7 @@ public:
         {
             if (QuestCreditTimer <= diff)
             {
-                Player* plr = sObjectAccessor->GetPlayer(go, aPlayer);
+                Player* plr = sObjectAccessor->GetPlayer(*(WorldObject*)&go, aPlayer);
                 opened = false;
                 QuestCreditTimer = 0;
                 if (plr)
