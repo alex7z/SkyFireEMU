@@ -548,7 +548,7 @@ public:
     float x, y, z, wx, wy, angle, tQuestCredit;
     bool opened;
     uint8 spawnKind;
-    uint32 aPlayer;
+    uint64 aPlayer;
     uint32 DoorTimer;
     uint32 QuestCreditTimer;
 
@@ -565,7 +565,7 @@ public:
     {
         if (player->GetQuestStatus(QUEST_EVAC_MERC_SQUA) == QUEST_STATUS_INCOMPLETE && go->GetGoState() == GO_STATE_READY)
         {
-            aPlayer          = player->GetGUIDLow();
+            aPlayer          = player->GetGUID();
             opened           = true;
             QuestCreditTimer = 2500;
             go->SetGoState(GO_STATE_ACTIVE);
@@ -605,7 +605,7 @@ public:
         {
             if (QuestCreditTimer <= diff)
             {
-                Player* plr = sObjectAccessor->GetPlayer(*(WorldObject*)&go, aPlayer);
+                Player* plr = ObjectAccessor::GetPlayer(*(WorldObject*)&go, aPlayer);
                 opened = false;
                 QuestCreditTimer = 0;
                 if (plr)
