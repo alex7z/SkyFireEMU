@@ -1012,77 +1012,60 @@ bool ChatHandler::HandleLookupSpellCommand(const char *args)
                 continue;
 
             if (!Utf8FitTo(name, wnamepart))
+                continue;
+
+            if (maxResults && count++ == maxResults)
             {
-                loc = 0;
-                for (; loc < TOTAL_LOCALES; ++loc)
-                {
-                    if (loc == GetSessionDbcLocale())
-                        continue;
-
-                    name = spellInfo->SpellName[loc];
-                    if (name.empty())
-                        continue;
-
-                    if (Utf8FitTo(name, wnamepart))
-                        break;
-                }
+                PSendSysMessage(LANG_COMMAND_LOOKUP_MAX_RESULTS, maxResults);
+                return true;
             }
 
-            if (loc < TOTAL_LOCALES)
-            {
-                if (maxResults && count++ == maxResults)
-                {
-                    PSendSysMessage(LANG_COMMAND_LOOKUP_MAX_RESULTS, maxResults);
-                    return true;
-                }
+            bool known = target && target->HasSpell(id);
+            bool learn = (spellInfo->Effects[0].Effect == SPELL_EFFECT_LEARN_SPELL);
 
-                bool known = target && target->HasSpell(id);
-                bool learn = (spellInfo->Effects[0].Effect == SPELL_EFFECT_LEARN_SPELL);
+            SpellInfo const* learnSpellInfo = sSpellMgr->GetSpellInfo(spellInfo->Effects[0].TriggerSpell);
 
-                SpellInfo const* learnSpellInfo = sSpellMgr->GetSpellInfo(spellInfo->Effects[0].TriggerSpell);
+            uint32 talentCost = GetTalentSpellCost(id);
 
-                uint32 talentCost = GetTalentSpellCost(id);
+            bool talent = (talentCost > 0);
+            bool passive = spellInfo->IsPassive();
+            bool active = target && target->HasAura(id);
 
-                bool talent = (talentCost > 0);
-                bool passive = spellInfo->IsPassive();
-                bool active = target && target->HasAura(id);
+            // unit32 used to prevent interpreting uint8 as char at output
+            // find rank of learned spell for learning spell, or talent rank
+            uint32 rank = talentCost ? talentCost : learn && learnSpellInfo ? learnSpellInfo->GetRank() : spellInfo->GetRank();
 
-                // unit32 used to prevent interpreting uint8 as char at output
-                // find rank of learned spell for learning spell, or talent rank
-                uint32 rank = talentCost ? talentCost : learn && learnSpellInfo ? learnSpellInfo->GetRank() : spellInfo->GetRank();
+            // send spell in "id - [name, rank N] [talent] [passive] [learn] [known]" format
+            std::ostringstream ss;
+            if (_session)
+                ss << id << " - |cffffffff|Hspell:" << id << "|h[" << name;
+            else
+                ss << id << " - " << name;
 
-                // send spell in "id - [name, rank N] [talent] [passive] [learn] [known]" format
-                std::ostringstream ss;
-                if (_session)
-                    ss << id << " - |cffffffff|Hspell:" << id << "|h[" << name;
-                else
-                    ss << id << " - " << name;
+            // include rank in link name
+            if (rank)
+                ss << GetSkyFireString(LANG_SPELL_RANK) << rank;
 
-                // include rank in link name
-                if (rank)
-                    ss << GetSkyFireString(LANG_SPELL_RANK) << rank;
+            if (_session)
+                ss << ' ' << localeNames[loc] << "]|h|r";
+            else
+                ss << ' ' << localeNames[loc];
 
-                if (_session)
-                    ss << ' ' << localeNames[loc] << "]|h|r";
-                else
-                    ss << ' ' << localeNames[loc];
+            if (talent)
+                ss << GetSkyFireString(LANG_TALENT);
+            if (passive)
+                ss << GetSkyFireString(LANG_PASSIVE);
+            if (learn)
+                ss << GetSkyFireString(LANG_LEARN);
+            if (known)
+                ss << GetSkyFireString(LANG_KNOWN);
+            if (active)
+                ss << GetSkyFireString(LANG_ACTIVE);
 
-                if (talent)
-                    ss << GetSkyFireString(LANG_TALENT);
-                if (passive)
-                    ss << GetSkyFireString(LANG_PASSIVE);
-                if (learn)
-                    ss << GetSkyFireString(LANG_LEARN);
-                if (known)
-                    ss << GetSkyFireString(LANG_KNOWN);
-                if (active)
-                    ss << GetSkyFireString(LANG_ACTIVE);
+            SendSysMessage(ss.str().c_str());
 
-                SendSysMessage(ss.str().c_str());
-
-                if (!found)
-                    found = true;
-            }
+            if (!found)
+                found = true;
         }
     }
     if (!found)
