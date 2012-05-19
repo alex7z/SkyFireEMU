@@ -373,11 +373,9 @@ bool AuthSocket::_HandleLogonChallenge()
             if (QueryResult res = WotLKLoginDatabase.PQuery("SELECT `id`, `username`, `sha_pass_hash`, `email`, `joindate`, `recruiter` FROM `account` WHERE `username` = '%s'",
                 _login.c_str()))
             {
-                Field* fields = res2->Fetch();
-                ERROR_LOG("%u %s %s %s %u %u", fields[0].GetUInt32(), fields[1].GetCString(), fields[2].GetCString(), fields[3].GetCString(), fields[4].GetUInt32(), fields[5].GetUInt32()
+                Field* fields = res->Fetch();
                 LoginDatabase.DirectPExecute("INSERT INTO `account` (`id`, `username`, `sha_pass_hash`, `email`, `joindate`, `recruiter`) VALUES (%u, '%s', '%s', '%s', %u, %u)",
                     fields[0].GetUInt32(), fields[1].GetCString(), fields[2].GetCString(), fields[3].GetCString(), fields[4].GetUInt64(), fields[5].GetUInt32());
-                ERROR_LOG("INSERTED");
                 PreparedStatement* stmt2 = LoginDatabase.GetPreparedStatement(LOGIN_ADD_REALM_CHARS);
                 LoginDatabase.Execute(stmt2);
 
