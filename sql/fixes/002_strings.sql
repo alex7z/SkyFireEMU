@@ -1,0 +1,2 @@
+UPDATE `skyfire_string` SET `content_default` = 'id: %d name: %s effmask: %d charges: %d stack: %d slot %d duration: %d maxduration: %d %s %s caster: %s (%u)' WHERE `entry` = 468;
+UPDATE `skyfire_string` SET `content_default` = 'Target unit has %d auras of type %d:', `content_loc8` = 'Выделенная цель имеет %d ауры типов %d:' WHERE `entry` = 469;
