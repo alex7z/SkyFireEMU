@@ -602,7 +602,7 @@ public:
     void OnUpdate(GameObject* go, uint32 diff)
     {
         if (opened)
-            sLog->outDebug("update %u", diff);
+            sLog->outDebug(LOG_FILTER_UNITS, "update %u", diff);
 
         if (opened && aPlayer)
         {
