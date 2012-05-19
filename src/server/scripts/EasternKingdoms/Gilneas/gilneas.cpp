@@ -570,7 +570,7 @@ public:
             QuestCreditTimer = 2500;
             go->SetGoState(GO_STATE_ACTIVE);
             DoorTimer = DOOR_TIMER;
-            spawnKind = urand(0, 2) + 1; //1, 2=citizen, 3=citizen&worgen (66%, 33%)
+            spawnKind = urand(0, 2); // 0, 1=citizen, 2=citizen&worgen (66%, 33%)
             angle = go->GetOrientation();
             x = go->GetPositionX()-cos(angle)*2;
             y = go->GetPositionY()-sin(angle)*2;
@@ -578,7 +578,7 @@ public:
             wx = x-cos(angle)*2;
             wy = y-sin(angle)*2;
 
-            if (spawnKind < 3)
+            if (spawnKind < 2)
             {
                 if (Creature* spawnedCreature = go->SummonCreature(NPC_FRIGHTENED_CITIZEN_1, x, y, z, angle, TEMPSUMMON_TIMED_DESPAWN, SUMMON1_TTL))
                 {
@@ -608,16 +608,18 @@ public:
         {
             if (QuestCreditTimer <= diff)
             {
-                Player* plr = ObjectAccessor::GetPlayer(*(WorldObject*)&go, aPlayer);
+                Player* plr = ObjectAccessor::GetPlayer(*(WorldObject*)go, aPlayer);
                 opened = false;
                 QuestCreditTimer = 0;
                 if (plr)
                 {
+                    sLog->outDebug(LOG_FILTER_UNITS, "rewarded %s", plr->GetName());
                     plr->KilledMonsterCredit(35830, 0);
-                    if (spawnKind == 3)
+                    if (spawnKind == 2)
                     {
                         if (Creature* spawnedCreature = go->SummonCreature(NPC_RAMPAGING_WORGEN_2, wx, wy, z, angle, TEMPSUMMON_TIMED_DESPAWN, SUMMON1_TTL))
                         {
+                            sLog->outDebug(LOG_FILTER_UNITS, "Spawned worgen");
                             spawnedCreature->SetPhaseMask(6, true);
                             spawnedCreature->Respawn(1);
                             spawnedCreature->getThreatManager().resetAllAggro();
