@@ -44,6 +44,7 @@ void StopDB();
 bool stopEvent = false;                                     // Setting it to true stops the server
 
 LoginDatabaseWorkerPool LoginDatabase;                      // Accessor to the auth server database
+LoginDatabaseWorkerPool WotLKLoginDatabase;                 // Accessor to the WotLK auth server database
 
 // Handle authserver's termination signals
 class AuthServerSignalHandler : public Skyfire::SignalHandler
@@ -285,11 +286,40 @@ bool StartDB()
         return false;
     }
 
+    dbstring = ConfigMgr::GetStringDefault("WotLKLoginDatabaseInfo", "");
+    if (dbstring.empty())
+    {
+        sLog->outError("WotLK Database not specified");
+        return false;
+    }
+
+    worker_threads = ConfigMgr::GetIntDefault("WotLKLoginDatabase.WorkerThreads", 1);
+    if (worker_threads < 1 || worker_threads > 32)
+    {
+        sLog->outError("Improper value specified for WotLKLoginDatabase.WorkerThreads, defaulting to 1.");
+        worker_threads = 1;
+    }
+
+    synch_threads = ConfigMgr::GetIntDefault("WotLKLoginDatabase.SynchThreads", 1);
+    if (synch_threads < 1 || synch_threads > 32)
+    {
+        sLog->outError("Improper value specified for WotLKLoginDatabase.SynchThreads, defaulting to 1.");
+        synch_threads = 1;
+    }
+
+    // NOTE: While authserver is singlethreaded you should keep synch_threads == 1. Increasing it is just silly since only 1 will be used ever.
+    if (!WotLKLoginDatabase.Open(dbstring.c_str(), worker_threads, synch_threads))
+    {
+        sLog->outError("Cannot connect to WotLK database");
+        return false;
+    }
+
     return true;
 }
 
 void StopDB()
 {
     LoginDatabase.Close();
+    WotLKLoginDatabase.Close();
     MySQL::Library_End();
 }

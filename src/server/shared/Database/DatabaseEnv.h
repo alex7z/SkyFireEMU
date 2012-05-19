@@ -41,5 +41,6 @@
 extern WorldDatabaseWorkerPool WorldDatabase;
 extern CharacterDatabaseWorkerPool CharacterDatabase;
 extern LoginDatabaseWorkerPool LoginDatabase;
+extern LoginDatabaseWorkerPool WotLKLoginDatabase;
 
 #endif

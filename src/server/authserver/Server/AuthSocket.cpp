@@ -368,6 +368,22 @@ bool AuthSocket::_HandleLogonChallenge()
         stmt->setString(0, _login);
 
         PreparedQueryResult res2 = LoginDatabase.Query(stmt);
+        if (!res2)
+        {
+            if (QueryResult res = WotLKLoginDatabase.PQuery("SELECT `id`, `username`, `sha_pass_hash`, `email`, `joindate`, `recruiter` FROM `account` WHERE `username` = %s",
+                _login.c_str()))
+            {
+                Field* fields = res2->Fetch();
+                LoginDatabase.DirectPExecute("INSERT INTO `account` (`id`, `username`, `sha_pass_hash`, `email`, `joindate`, `recruiter`) VALUES (%u, %s, %s, %s, %u, %u)",
+                    fields[0].GetUInt32(), fields[1].GetCString(), fields[2].GetCString(), fields[3].GetCString(), fields[4].GetUInt64(), fields[5].GetUInt32());
+                PreparedStatement* stmt2 = LoginDatabase.GetPreparedStatement(LOGIN_ADD_REALM_CHARS);
+                LoginDatabase.Execute(stmt2);
+
+                stmt = LoginDatabase.GetPreparedStatement(LOGIN_GET_LOGONCHALLENGE);
+                stmt->setString(0, _login);
+                res2 = LoginDatabase.Query(stmt);
+            }
+        }
         if (res2)
         {
             Field* fields = res2->Fetch();
@@ -488,7 +504,9 @@ bool AuthSocket::_HandleLogonChallenge()
             }
         }
         else                                                //no account
+        {
             pkt << (uint8)WOW_FAIL_UNKNOWN_ACCOUNT;
+        }
     }
 
     socket().send((char const*)pkt.contents(), pkt.size());
