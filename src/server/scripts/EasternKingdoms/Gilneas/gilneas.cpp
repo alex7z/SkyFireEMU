@@ -1249,36 +1249,22 @@ class spell_keg_placed : public SpellScriptLoader
         {
             PrepareAuraScript(spell_keg_placed_AuraScript);
 
-            uint32 tick, tickcount;
-
             void HandleEffectApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
-                tick = urand(1, 4);
-                tickcount = 0;
-            }
-
-            void HandlePeriodic(AuraEffect const* aurEff)
-            {
-                PreventDefaultAction();
                 if (Unit* caster = GetCaster())
                 {
-                    if (tickcount > tick)
-                    {
-                        if (caster->GetTypeId() != TYPEID_PLAYER)
-                            return;
+                    if (caster->GetTypeId() != TYPEID_PLAYER)
+                        return;
 
-                        caster->ToPlayer()->KilledMonsterCredit(36233, 0);
-                        if (Unit* target = GetTarget())
-                            target->Kill(target);
-                    }
-                    tickcount++;
+                    caster->ToPlayer()->KilledMonsterCredit(36233, 0);
+                    if (Unit* target = GetTarget())
+                        target->Kill(target);
                 }
             }
 
             void Register()
             {
                 OnEffectApply += AuraEffectApplyFn(spell_keg_placed_AuraScript::HandleEffectApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-                OnEffectPeriodic += AuraEffectPeriodicFn(spell_keg_placed_AuraScript::HandlePeriodic, EFFECT_0, SPELL_AURA_DUMMY);
             }
         };
 
