@@ -47,7 +47,7 @@ LoginDatabaseWorkerPool LoginDatabase;                      // Accessor to the a
 LoginDatabaseWorkerPool WotLKLoginDatabase;                 // Accessor to the WotLK auth server database
 
 // Handle authserver's termination signals
-class AuthServerSignalHandler : public Skyfire::SignalHandler
+class AuthServerSignalHandler : public SkyFire::SignalHandler
 {
 public:
     virtual void HandleSignal(int SigNum)

@@ -95,19 +95,19 @@ Guild* GuildMgr::GetGuildByLeader(uint64 guid) const
 void GuildMgr::LoadGuilds()
 {
     // 1. Load all guilds
-    sLog->outString("Loading guilds definitions...");
+    sLog->outString("Loading Guilds...");
     {
         uint32 oldMSTime = getMSTime();
 
                                                 //           0          1       2             3              4              5              6
         QueryResult result = CharacterDatabase.Query("SELECT g.guildid, g.name, g.leaderguid, g.EmblemStyle, g.EmblemColor, g.BorderStyle, g.BorderColor, "
                                                 //    7                  8       9       10            11           12         13         14       15
-                                                     "g.BackgroundColor, g.info, g.motd, g.createdate, g.BankMoney, COUNT(gbt.guildid), xp, level , m_today_xp, m_xp_cap  "
+                                                     "g.BackgroundColor, g.info, g.motd, g.createdate, g.BankMoney, COUNT(gbt.guildid), xp, level, m_today_xp, m_xp_cap  "
                                                      "FROM guild g LEFT JOIN guild_bank_tab gbt ON g.guildid = gbt.guildid GROUP BY g.guildid ORDER BY g.guildid ASC");
 
         if (!result)
         {
-            sLog->outString(">> Loaded 0 guild definitions. DB table `guild` is empty.");
+            sLog->outString(">> Loaded 0 Guilds. DB table `guild` is empty.");
             sLog->outString();
             return;
         }
@@ -136,7 +136,7 @@ void GuildMgr::LoadGuilds()
             }
             while (result->NextRow());
 
-            sLog->outString(">> Loaded %u guild definitions in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+            sLog->outString(">> Loaded %u Guilds in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
             sLog->outString();
         }
     }
@@ -433,6 +433,8 @@ uint32 GetXPForGuildLevel(uint8 level);
 
 void GuildMgr::LoadGuildRewards()
 {
+    uint32 oldMSTime = getMSTime();
+
     QueryResult result = WorldDatabase.Query("SELECT item_entry, price, achievement, standing FROM guild_rewards");
 
     if (!result)
@@ -455,8 +457,8 @@ void GuildMgr::LoadGuildRewards()
         mGuildRewards.push_back(reward);
 
         ++count;
-    }while (result->NextRow());
+    } while (result->NextRow());
 
+    sLog->outString(">> Loaded %u guild reward definitions in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
     sLog->outString();
-    sLog->outString(">> Loaded %u guild reward definitions.");
 }

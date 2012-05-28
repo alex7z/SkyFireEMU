@@ -1012,7 +1012,7 @@ SpellTotemsEntry const* SpellInfo::GetSpellTotems() const
 
 SpellInfo::~SpellInfo()
 {
-    _UnloadImplicitTargetConditionLists();
+    //_UnloadImplicitTargetConditionLists();
 }
 
 bool SpellInfo::HasEffect(SpellEffects effect) const
@@ -1569,7 +1569,10 @@ SpellCastResult SpellInfo::CheckLocation(uint32 map_id, uint32 zone_id, uint32 a
     switch (Id)
     {
         case 23333:                                         // Warsong Flag
+            return map_id == 726 && player && player->InBattleground() ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
         case 23335:                                         // Silverwing Flag
+            return map_id == 726 && player && player->InBattleground() ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
+            // why do i feel like theres a missing case here?
             return map_id == 489 && player && player->InBattleground() ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
         case 34976:                                         // Netherstorm Flag
             return map_id == 566 && player && player->InBattleground() ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
@@ -2412,10 +2415,10 @@ bool SpellInfo::_IsPositiveEffect(uint8 effIndex, bool deep) const
             switch (Id)
             {
                 case 34700: // Allergic Reaction
-                case 61716: // Rabbit Costume
-                case 61734: // Noblegarden Bunny
                 case 62532: // Conservator's Grip
                     return false;
+                case 61716: // Rabbit Costume
+                case 61734: // Noblegarden Bunny
                 case 30877: // Tag Murloc
                 case 62344: // Fists of Stone
                     return true;
@@ -2669,7 +2672,7 @@ bool SpellInfo::_IsPositiveTarget(uint32 targetA, uint32 targetB)
         return _IsPositiveTarget(targetB, 0);
     return true;
 }
-
+/*
 void SpellInfo::_UnloadImplicitTargetConditionLists()
 {
     // find the same instances of ConditionList and delete them.
@@ -2686,3 +2689,4 @@ void SpellInfo::_UnloadImplicitTargetConditionLists()
         delete cur;
     }
 }
+*/

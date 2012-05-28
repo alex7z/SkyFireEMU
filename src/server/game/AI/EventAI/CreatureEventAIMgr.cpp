@@ -44,7 +44,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Texts()
 
     if (!result)
     {
-        sLog->outString(">> Loaded 0 additional CreatureEventAI Texts data. DB table `creature_ai_texts` is empty.");
+        sLog->outString(">> Loaded 0 additional CreatureAI Texts data. DB table `creature_ai_texts` is empty.");
         sLog->outString();
         return;
     }
@@ -70,7 +70,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Texts()
         }
 
         // range negative (must not happen, loaded from same table)
-        if (!sObjectMgr->GetTrinityStringLocale(i))
+        if (!sObjectMgr->GetSkyFireStringLocale(i))
         {
             sLog->outErrorDb("CreatureEventAI:  Entry %i in table `creature_ai_texts` not found", i);
             continue;
@@ -99,7 +99,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Texts()
     }
     while (result->NextRow());
 
-    sLog->outString(">> Loaded %u additional CreatureEventAI Texts data in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+    sLog->outString(">> Loaded %u additional CreatureAI Texts data in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
     sLog->outString();
 }
 
@@ -136,7 +136,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Summons()
         temp.orientation = fields[4].GetFloat();
         temp.SpawnTimeSecs = fields[5].GetUInt32();
 
-        if (!Skyfire::IsValidMapCoord(temp.position_x, temp.position_y, temp.position_z, temp.orientation))
+        if (!SkyFire::IsValidMapCoord(temp.position_x, temp.position_y, temp.position_z, temp.orientation))
         {
             sLog->outErrorDb("CreatureEventAI:  Summon id %u have wrong coordinates (%f, %f, %f, %f), skipping.", i, temp.position_x, temp.position_y, temp.position_z, temp.orientation);
             continue;

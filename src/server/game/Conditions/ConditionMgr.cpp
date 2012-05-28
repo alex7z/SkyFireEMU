@@ -274,6 +274,12 @@ bool Condition::Meets(ConditionSourceInfo& sourceInfo)
             condMeets = object->GetPhaseMask() & ConditionValue1;
             break;
         }
+        case CONDITION_TITLE:
+        {
+            if (Player* player = object->ToPlayer())
+                condMeets = player->HasTitle(ConditionValue1);
+            break;
+        }
         default:
             condMeets = false;
             break;
@@ -421,6 +427,9 @@ uint32 Condition::GetSearcherTypeMaskForCondition()
             break;
         case CONDITION_PHASEMASK:
             mask |= GRID_MAP_TYPE_MASK_ALL;
+            break;
+        case CONDITION_TITLE:
+            mask |= GRID_MAP_TYPE_MASK_PLAYER;
             break;
         default:
             ASSERT(false && "Condition::GetSearcherTypeMaskForCondition - missing condition handling!");
@@ -694,11 +703,10 @@ void ConditionMgr::LoadConditions(bool isReload)
 
         sLog->outString("Re-Loading `gossip_menu_option` Table for Conditions!");
         sObjectMgr->LoadGossipMenuItems();
-        sSpellMgr->UnloadSpellInfoImplicitTargetConditionLists();
+        //sSpellMgr->UnloadSpellInfoImplicitTargetConditionLists();
     }
 
-    QueryResult result = WorldDatabase.Query("SELECT SourceTypeOrReferenceId, SourceGroup, SourceEntry, SourceId, ElseGroup, ConditionTypeOrReference, ConditionTarget, "
-                                             " ConditionValue1, ConditionValue2, ConditionValue3, NegativeCondition, ErrorTextId, ScriptName FROM conditions");
+    QueryResult result = WorldDatabase.Query("SELECT SourceTypeOrReferenceId, SourceGroup, SourceEntry, SourceId, ElseGroup, ConditionTypeOrReference, ConditionTarget, ConditionValue1, ConditionValue2, ConditionValue3, NegativeCondition, ErrorTextId, ScriptName FROM conditions");
 
     if (!result)
     {
@@ -1271,7 +1279,7 @@ bool ConditionMgr::isSourceTypeValid(Condition* cond)
 
             if ((cond->SourceGroup > MAX_EFFECT_MASK) || !cond->SourceGroup)
             {
-                sLog->outErrorDb("SourceEntry %u in `condition` table, has incorrect SourceGroup %u (spell effectMask) set , ignoring.", cond->SourceEntry, cond->SourceGroup);
+                sLog->outErrorDb("SourceEntry %u in `condition` table, has incorrect SourceGroup %u (spell effectMask) set, ignoring.", cond->SourceEntry, cond->SourceGroup);
                 return false;
             }
 
@@ -1823,9 +1831,16 @@ bool ConditionMgr::isConditionTypeValid(Condition* cond)
                 sLog->outErrorDb("Phasemask condition has useless data in value3 (%u)!", cond->ConditionValue3);
             break;
         }
-        case CONDITION_UNUSED_18:
-            sLog->outErrorDb("Found ConditionTypeOrReference = CONDITION_UNUSED_18 in `conditions` table - ignoring");
-            return false;
+        case CONDITION_TITLE:
+        {
+            CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(cond->ConditionValue1);
+            if (!titleEntry)
+            {
+                sLog->outErrorDb("Title condition has non existing title in value1 (%u), skipped", cond->ConditionValue1);
+                return false;
+            }
+            break;
+        }
         case CONDITION_UNUSED_19:
             sLog->outErrorDb("Found ConditionTypeOrReference = CONDITION_UNUSED_19 in `conditions` table - ignoring");
             return false;

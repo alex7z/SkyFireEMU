@@ -174,6 +174,10 @@ bool LoginQueryHolder::Initialize()
     stmt->setUInt32(0, lowGuid);
     res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_CURRENCY, stmt);
 
+    stmt = CharacterDatabase.GetPreparedStatement(CHAR_LOAD_PLAYER_CP_WEEK_CAP);
+    stmt->setUInt32(0, lowGuid);
+    res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_CP_WEEK_CAP, stmt);
+
     stmt = CharacterDatabase.GetPreparedStatement(CHAR_LOAD_PLAYER_GLYPHS);
     stmt->setUInt32(0, lowGuid);
     res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOADGLYPHS, stmt);
@@ -227,6 +231,10 @@ void WorldSession::HandleCharEnum(PreparedQueryResult result)
         do
         {
             uint32 guidlow = (*result)[0].GetUInt32();
+
+            if (_allowedCharsToLogin.find(guidlow) != _allowedCharsToLogin.end()) // Fixes a glitch when a player had multiple pets in the same slot
+                continue;
+
             sLog->outDetail("Loading char guid %u from account %u.", guidlow, GetAccountId());
             if (Player::BuildEnumData(result, &data))
             {
@@ -928,7 +936,9 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
             uint32 MaxPlayersNum = sWorld->GetMaxPlayerCount();
             std::string uptime = secsToTimeString(sWorld->GetUptime());
 
-            chH.PSendSysMessage(_CLIENT_BUILD_REVISION_2, _FULLVERSION);
+            chH.PSendSysMessage(_CLIENT_BUILD_REVISION_2);
+            chH.PSendSysMessage("Revision Hash: "_HASH);
+            chH.PSendSysMessage("Build Date: "_DATE);
             chH.PSendSysMessage(LANG_CONNECTED_PLAYERS, PlayersNum, MaxPlayersNum);
             chH.PSendSysMessage(LANG_UPTIME, uptime.c_str());
 
@@ -1024,7 +1034,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     //Send WG timer to player at login
     if (sWorld->getBoolConfig(CONFIG_WINTERGRASP_ENABLE))
     {
-        if (Battlefield *bfWG = sBattlefieldMgr.GetBattlefieldByBattleId(1))
+        if (Battlefield *bfWG = sBattlefieldMgr->GetBattlefieldByBattleId(1))
         {
             if (bfWG->IsWarTime())
                 pCurrChar->SendUpdateWorldState(ClockWorldState[1], uint32(time(NULL)));
@@ -1036,7 +1046,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
     //Send TB timer to player at login
     if (sWorld->getBoolConfig(CONFIG_TOL_BARAD_ENABLE))
     {
-        if (Battlefield * bfTB = sBattlefieldMgr.GetBattlefieldToZoneId(5095))
+        if (Battlefield * bfTB = sBattlefieldMgr->GetBattlefieldToZoneId(5095))
         {
             if (bfTB->IsWarTime())
                 pCurrChar->SendUpdateWorldState(TBClockWorldState[1], uint32(time(NULL)));
@@ -1132,7 +1142,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     std::string IP_str = GetRemoteAddress();
     sLog->outChar("Account: %d (IP: %s) Login Character:[%s] (GUID: %u)",
-        GetAccountId(), IP_str.c_str(), pCurrChar->GetName() , pCurrChar->GetGUIDLow());
+        GetAccountId(), IP_str.c_str(), pCurrChar->GetName(), pCurrChar->GetGUIDLow());
 
     if (!pCurrChar->IsStandState() && !pCurrChar->HasUnitState(UNIT_STATE_STUNNED))
         pCurrChar->SetStandState(UNIT_STAND_STATE_STAND);

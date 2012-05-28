@@ -24,7 +24,7 @@ bool BattlefieldTB::SetupBattlefield()
     m_TypeId                     = BATTLEFIELD_TB;    //View enum BattlefieldTypes
     m_BattleId                   = BATTLEFIELD_BATTLEID_TB;
     m_ZoneId                     = 5095; // Tol Barad
-    _MapId                      = 732;  // Map X
+    _MapId                       = 732;  // Map X
     m_MaxPlayer                  = sWorld->getIntConfig(CONFIG_TOL_BARAD_PLR_MAX);
     m_enable                     = sWorld->getBoolConfig(CONFIG_TOL_BARAD_ENABLE);
     m_MinPlayer                  = sWorld->getIntConfig(CONFIG_TOL_BARAD_PLR_MIN);
@@ -134,7 +134,7 @@ bool BattlefieldTB::SetupBattlefield()
                 HideNpc(creature);
 
     // Spawning battle npcs
-    for (uint8 i = 0; i<TB_MAX_KEEP_NPC; i++)
+    for (uint8 i = 0; i<TB_MAX_WAR_NPC; i++)
     {
         // Horde npc
         if (Creature* creature = SpawnCreature(TBWarNPC[i].entryh, TBWarNPC[i].x, TBWarNPC[i].y, TBWarNPC[i].z, TBWarNPC[i].o, TEAM_HORDE))

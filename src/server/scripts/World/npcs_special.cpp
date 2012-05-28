@@ -1343,7 +1343,7 @@ public:
             case GOSSIP_OPTION_LEARNDUALSPEC:
                 if (player->GetSpecsCount() == 1 && !(player->getLevel() < sWorld->getIntConfig(CONFIG_MIN_DUALSPEC_LEVEL)))
                 {
-                    if (!player->HasEnoughMoney(10000000))
+                    if (!player->HasEnoughMoney(100000))
                     {
                         player->SendBuyError(BUY_ERR_NOT_ENOUGHT_MONEY, 0, 0, 0);
                         player->PlayerTalkClass->SendCloseGossip();
@@ -1351,7 +1351,7 @@ public:
                     }
                     else
                     {
-                        player->ModifyMoney(-10000000);
+                        player->ModifyMoney(-100000);
 
                         // Cast spells that teach dual spec
                         // Both are also ImplicitTarget self and must be cast by player
@@ -1975,8 +1975,8 @@ public:
             DespawnTimer = 0;
             // Find victim of Summon Gargoyle spell
             std::list<Unit*> targets;
-            Skyfire::AnyUnfriendlyUnitInObjectRangeCheck u_check(me, me, 30);
-            Skyfire::UnitListSearcher<Skyfire::AnyUnfriendlyUnitInObjectRangeCheck> searcher(me, targets, u_check);
+            SkyFire::AnyUnfriendlyUnitInObjectRangeCheck u_check(me, me, 30);
+            SkyFire::UnitListSearcher<SkyFire::AnyUnfriendlyUnitInObjectRangeCheck> searcher(me, targets, u_check);
             me->VisitNearbyObject(30, searcher);
             for (std::list<Unit*>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter)
                 if ((*iter)->GetAura(49206, ownerGuid))
@@ -2977,7 +2977,7 @@ public:
 // Uncomment this once guardians are able to cast spells
 // on owner at AI initialization and be able to cast spells based on owner's triggered spellcasts.
 
-enum GuardianSpellsAndEntries
+/* enum GuardianSpellsAndEntries
 {
     NPC_PROTECTION_GUARDIAN         = 46490,
     NPC_HOLY_GUARDIAN               = 46499,
@@ -3025,7 +3025,7 @@ public:
                 DoMeleeAttackIfReady();  // at least is what i saw on vids.
         }
 
-        void SpellHitTarget(Unit* /*target*/, SpellInfo const* spell)
+        void SpellHitTarget(Unit* /*target*, SpellInfo const* spell)
         {
             if (me->GetEntry() == NPC_HOLY_GUARDIAN) // Holy paladin guardian
             {
@@ -3047,6 +3047,272 @@ public:
     CreatureAI* GetAI(Creature* creature) const
     {
         return new npc_guardian_of_ancient_kingsAI(creature);
+    }
+};*/
+
+class npc_ring_of_frost : public CreatureScript
+{
+public:
+    npc_ring_of_frost() : CreatureScript("npc_ring_of_frost") { }
+
+    struct npc_ring_of_frostAI : public ScriptedAI
+    {
+        npc_ring_of_frostAI(Creature *creature) : ScriptedAI(creature) {}
+        bool Isready;
+        uint32 timer;
+
+        void Reset()
+        {
+            timer = 3000; // 3sec
+            Isready = false;
+        }
+
+        void InitializeAI()
+        {
+            ScriptedAI::InitializeAI();
+            Unit* owner = me->GetOwner();
+            if (!owner || owner->GetTypeId() != TYPEID_PLAYER)
+                return;
+
+            me->SetReactState(REACT_PASSIVE);
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+
+            // Remove other ring spawned by the player
+            std::list<Creature*> templist;
+            float x, y, z;
+            me->GetPosition(x, y, z);
+            {
+                CellCoord pair(SkyFire::ComputeCellCoord(x, y));
+                Cell cell(pair);
+                cell.SetNoCreate();
+
+                SkyFire::AllFriendlyCreaturesInGrid check(me);
+                SkyFire::CreatureListSearcher<SkyFire::AllFriendlyCreaturesInGrid> searcher(me, templist, check);
+
+                TypeContainerVisitor<SkyFire::CreatureListSearcher<SkyFire::AllFriendlyCreaturesInGrid>, GridTypeMapContainer> cSearcher(searcher);
+
+                cell.Visit(pair, cSearcher, *(me->GetMap()), *me, me->GetGridActivationRange());
+
+                if (!templist.empty())
+                    for (std::list<Creature*>::const_iterator itr = templist.begin(); itr != templist.end(); ++itr)
+                        if((*itr)->GetEntry() == me->GetEntry() && ((*itr)->GetOwner() == me->GetOwner() && *itr != me))
+                            (*itr)->DisappearAndDie();
+                templist.clear();
+            }
+        }
+
+        void EnterEvadeMode() { return; }
+
+        void CheckIfMoveInRing(Unit* who)
+        {
+            if (who->isAlive() && me->IsInRange(who, 2.0f, 4.7f) && !who->HasAura(82691)/*<= target already frozen*/ && !Isready)
+                me->CastSpell(who, 82691, true);
+        }
+
+        void UpdateAI(const uint32 diff)
+        {
+            if (timer <= diff)
+            {
+                if (!Isready)
+                {
+                    Isready = true;
+                    timer = 9000; // 9sec
+                }
+                else
+                    me->DisappearAndDie();
+            }
+            else
+                timer -= diff;
+
+            // Find all the enemies
+            std::list<Unit*> targets;
+            SkyFire::AnyUnfriendlyUnitInObjectRangeCheck u_check(me, me, 5.0f);
+            SkyFire::UnitListSearcher<SkyFire::AnyUnfriendlyUnitInObjectRangeCheck> searcher(me, targets, u_check);
+            me->VisitNearbyObject(5.0f, searcher);
+            for (std::list<Unit*>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter)
+                CheckIfMoveInRing(*iter);
+        }
+    };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new npc_ring_of_frostAI(creature);
+    }
+};
+
+// npc_flame_orb
+enum FlameOrb
+{
+    SPELL_FLAME_ORB_DAMAGE          = 86719,
+    FLAME_ORB_DISTANCE              = 120
+};
+
+class npc_flame_orb : public CreatureScript
+{
+public:
+    npc_flame_orb() : CreatureScript("npc_flame_orb") {}
+
+    struct npc_flame_orbAI : public ScriptedAI
+    {
+        npc_flame_orbAI(Creature *creature) : ScriptedAI(creature)
+        {
+            x = me->GetPositionX();
+            y = me->GetPositionY();
+            z = me->GetOwner()->GetPositionZ()+2;
+            o = me->GetOrientation();
+            me->NearTeleportTo(x, y, z, o, true);
+            angle = me->GetOwner()->GetAngle(me);
+            newx = me->GetPositionX() + FLAME_ORB_DISTANCE/2 * cos(angle);
+            newy = me->GetPositionY() + FLAME_ORB_DISTANCE/2 * sin(angle);
+            CombatCheck = false;
+        }
+
+        float x, y, z, o, newx, newy, angle;
+        bool CombatCheck;
+        uint32 DespawnTimer;
+        uint32 DespawnCheckTimer;
+        uint32 DamageTimer;
+
+        void EnterCombat(Unit* /*target*/)
+        {
+            me->GetMotionMaster()->MoveCharge(newx, newy, z, 1.14286f);  // Normal speed
+            DespawnTimer = 15 * IN_MILLISECONDS;
+            CombatCheck = true;
+        }
+
+        void Reset()
+        {
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE|UNIT_FLAG_NON_ATTACKABLE);
+            me->AddUnitMovementFlag(MOVEMENTFLAG_FLYING);
+            me->SetReactState(REACT_PASSIVE);
+            if (CombatCheck == true)
+                DespawnTimer = 15 * IN_MILLISECONDS;
+            else
+                DespawnTimer = 4 * IN_MILLISECONDS;
+            DamageTimer = 1 * IN_MILLISECONDS;
+            me->GetMotionMaster()->MovePoint(0, newx, newy, z);
+        }
+
+        void UpdateAI(const uint32 diff)
+        {
+            if (!me->isInCombat() && CombatCheck == false)
+            {
+                me->SetSpeed(MOVE_RUN, 2, true);
+                me->SetSpeed(MOVE_FLIGHT, 2, true);
+            }
+
+            if (DespawnTimer <= diff)
+            {
+                me->SetVisible(false);
+                me->DisappearAndDie();
+            }
+            else
+                DespawnTimer -= diff;
+
+            if (DamageTimer <= diff)
+            {
+                if (Unit* target = me->SelectNearestTarget(20))
+                    DoCast(target, SPELL_FLAME_ORB_DAMAGE);
+
+                DamageTimer = 1 * IN_MILLISECONDS;
+            }
+            else
+                DamageTimer -= diff;
+        }
+    };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new npc_flame_orbAI(creature);
+    }
+};
+
+// npc_frostfire_orb
+enum FrostfireOrb
+{
+    SPELL_FROSTFIRE_ORB_DAMAGE_RANK_1   = 95969,
+    SPELL_FROSTFIRE_ORB_DAMAGE_RANK_2   = 84721,
+    FROSTFIRE_ORB_DISTANCE              = 120
+};
+
+class npc_frostfire_orb : public CreatureScript
+{
+public:
+    npc_frostfire_orb() : CreatureScript("npc_frostfire_orb") {}
+
+    struct npc_frostfire_orbAI : public ScriptedAI
+    {
+        npc_frostfire_orbAI(Creature* creature) : ScriptedAI(creature)
+        {
+            x = me->GetPositionX();
+            y = me->GetPositionY();
+            z = me->GetOwner()->GetPositionZ()+2;
+            o = me->GetOrientation();
+            me->NearTeleportTo(x, y, z, o, true);
+            angle = me->GetOwner()->GetAngle(me);
+            newx = me->GetPositionX() + FROSTFIRE_ORB_DISTANCE/2 * cos(angle);
+            newy = me->GetPositionY() + FROSTFIRE_ORB_DISTANCE/2 * sin(angle);
+            CombatCheck = false;
+        }
+
+        float x,y,z,o,newx,newy,angle;
+        bool CombatCheck;
+        uint32 despawnTimer;
+        uint32 despawnCheckTimer;
+        uint32 damageTimer;
+
+        void EnterCombat(Unit* /*target*/)
+        {
+            me->GetMotionMaster()->MoveCharge(newx, newy, z, 1.14286f); // Normal speed
+            despawnTimer = 15 * IN_MILLISECONDS;
+            CombatCheck = true;
+        }
+
+        void Reset()
+        {
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_NON_ATTACKABLE);
+            me->AddUnitMovementFlag(MOVEMENTFLAG_FLYING);
+            me->SetReactState(REACT_PASSIVE);
+            if (CombatCheck == true)
+                despawnTimer = 15 * IN_MILLISECONDS;
+            else
+                despawnTimer = 4 * IN_MILLISECONDS;
+            damageTimer = 1 * IN_MILLISECONDS;
+            me->GetMotionMaster()->MovePoint(0, newx, newy, z);
+        }
+
+        void UpdateAI(const uint32 diff)
+        {
+            if (!me->isInCombat() && CombatCheck == false)
+            {
+                me->SetSpeed(MOVE_RUN, 2, true);
+                me->SetSpeed(MOVE_FLIGHT, 2, true);
+            }
+
+            if (despawnTimer <= diff)
+                me->DisappearAndDie();
+            else
+                despawnTimer -= diff;
+
+            if (damageTimer <= diff)
+            {
+                if (Unit* target = me->SelectNearestTarget(20))
+                    if (me->GetOwner()->HasAura(84726))
+                        DoCast(target, SPELL_FROSTFIRE_ORB_DAMAGE_RANK_1);
+                    else
+                        DoCast(target, SPELL_FROSTFIRE_ORB_DAMAGE_RANK_2);
+
+                damageTimer = 1 * IN_MILLISECONDS;
+            }
+            else
+                damageTimer -= diff;
+        }
+    };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new npc_frostfire_orbAI(creature);
     }
 };
 
@@ -3113,8 +3379,8 @@ class npc_power_word_barrier : public CreatureScript
 
            //Check friendly entities
            std::list<Unit*> targets;
-            Skyfire::AnyFriendlyUnitInObjectRangeCheck u_check(me, me, 7.0f);
-            Skyfire::UnitListSearcher<Skyfire::AnyFriendlyUnitInObjectRangeCheck> searcher(me, targets, u_check);
+            SkyFire::AnyFriendlyUnitInObjectRangeCheck u_check(me, me, 7.0f);
+            SkyFire::UnitListSearcher<SkyFire::AnyFriendlyUnitInObjectRangeCheck>searcher(me, targets, u_check);
 
             me->VisitNearbyObject(7.0f, searcher);
             for (std::list<Unit*>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter)
@@ -3159,6 +3425,9 @@ void AddSC_npcs_special()
     new npc_tabard_vendor;
     new npc_experience;
     new npc_firework;
-    new npc_guardian_of_ancient_kings;
+    // new npc_guardian_of_ancient_kings;
+    new npc_flame_orb;
+    new npc_ring_of_frost;
+    new npc_frostfire_orb;
     new npc_power_word_barrier;
 }

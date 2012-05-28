@@ -269,8 +269,6 @@ enum eHoratio
     QUEST_HERO_WESTFALL1     = 28562,
     QUEST_HERO_WESTFALL2     = 26378,
 
-    SPELL_INVISIBILITY       = 79488,
-
     NPC_HORATIO              = 42308,
     NPC_INVESTIGATOR1          = 42309,
     NPC_INVESTIGATOR2          = 42745
@@ -362,6 +360,7 @@ class npc_horatio : public CreatureScript
                             case 0:
                             {
                                 Investigator01->MonsterSay("It's a bloodbath, lieutenant. They've been murdered.", 0, 0);
+                                me->SetStandState(UNIT_STAND_STATE_KNEEL);
                                 TextTimer = 6000;
                                 Phase++;
                                 break;
@@ -763,8 +762,8 @@ class npc_crate_mine : public CreatureScript
 
                                 std::list<Player*> players;
 
-                                Skyfire::AnyPlayerInObjectRangeCheck checker(me, 25.0f);
-                                Skyfire::PlayerListSearcher<Skyfire::AnyPlayerInObjectRangeCheck> searcher(me, players, checker);
+                                SkyFire::AnyPlayerInObjectRangeCheck checker(me, 25.0f);
+                                SkyFire::PlayerListSearcher<SkyFire::AnyPlayerInObjectRangeCheck> searcher(me, players, checker);
                                 me->VisitNearbyWorldObject(20.0f, searcher);
 
                                 for (std::list<Player*>::const_iterator itr = players.begin(); itr != players.end(); ++itr)
@@ -1825,8 +1824,8 @@ class npc_rise_br : public CreatureScript
 
                                 std::list<Player*> players;
 
-                                Skyfire::AnyPlayerInObjectRangeCheck checker(me, 50.0f);
-                                Skyfire::PlayerListSearcher<Skyfire::AnyPlayerInObjectRangeCheck> searcher(me, players, checker);
+                                SkyFire::AnyPlayerInObjectRangeCheck checker(me, 50.0f);
+                                SkyFire::PlayerListSearcher<SkyFire::AnyPlayerInObjectRangeCheck> searcher(me, players, checker);
                                 me->VisitNearbyWorldObject(50.0f, searcher);
 
                                 for (std::list<Player*>::const_iterator itr = players.begin(); itr != players.end(); ++itr)

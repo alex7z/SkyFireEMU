@@ -168,6 +168,33 @@ enum PutricideData
 #define EXPERIMENT_STATE_OOZE   false
 #define EXPERIMENT_STATE_GAS    true
 
+class AbominationDespawner
+{
+    public:
+        explicit AbominationDespawner(Unit* owner) : _owner(owner) { }
+
+        bool operator()(uint64 guid)
+        {
+            if (Unit* summon = ObjectAccessor::GetUnit(*_owner, guid))
+            {
+                if (summon->GetEntry() == NPC_MUTATED_ABOMINATION_10 || summon->GetEntry() == NPC_MUTATED_ABOMINATION_25)
+                {
+                    if (Vehicle* veh = summon->GetVehicleKit())
+                        veh->RemoveAllPassengers(); // also despawns the vehicle
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+    private:
+        Unit* _owner;
+};
+
 class boss_professor_putricide : public CreatureScript
 {
     public:
@@ -399,7 +426,7 @@ class boss_professor_putricide : public CreatureScript
                             GetCreatureListWithEntryInGrid(list, rotface, NPC_PUDDLE_STALKER, 36.0f);
                             if (list.size() > 4)
                             {
-                                list.sort(Skyfire::ObjectDistanceOrderPred(rotface));
+                                list.sort(SkyFire::ObjectDistanceOrderPred(rotface));
                                 do
                                 {
                                     list.pop_back();
@@ -478,8 +505,7 @@ class boss_professor_putricide : public CreatureScript
                                 SetPhase(PHASE_COMBAT_3);
                                 events.ScheduleEvent(EVENT_MUTATED_PLAGUE, 25000);
                                 events.CancelEvent(EVENT_UNSTABLE_EXPERIMENT);
-                                summons.DespawnEntry(NPC_MUTATED_ABOMINATION_10);
-                                summons.DespawnEntry(NPC_MUTATED_ABOMINATION_25);
+                                summons.remove_if(AbominationDespawner(me));
                                 break;
                             default:
                                 break;
@@ -1109,7 +1135,7 @@ class spell_putricide_eat_ooze : public SpellScriptLoader
                 if (targets.empty())
                     return;
 
-                targets.sort(Skyfire::ObjectDistanceOrderPred(GetCaster()));
+                targets.sort(SkyFire::ObjectDistanceOrderPred(GetCaster()));
                 Unit* target = targets.front();
                 targets.clear();
                 targets.push_back(target);
@@ -1208,11 +1234,11 @@ class spell_putricide_mutation_init : public SpellScriptLoader
 
             SpellCastResult CheckRequirementInternal(SpellCustomErrors& extendedError)
             {
-                InstanceScript* instance = GetTargetUnit()->GetInstanceScript();
+                InstanceScript* instance = GetExplTargetUnit()->GetInstanceScript();
                 if (!instance)
                     return SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW;
 
-                Creature* professor = ObjectAccessor::GetCreature(*GetTargetUnit(), instance->GetData64(DATA_PROFESSOR_PUTRICIDE));
+                Creature* professor = ObjectAccessor::GetCreature(*GetExplTargetUnit(), instance->GetData64(DATA_PROFESSOR_PUTRICIDE));
                 if (!professor)
                     return SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW;
 
@@ -1233,17 +1259,17 @@ class spell_putricide_mutation_init : public SpellScriptLoader
 
             SpellCastResult CheckRequirement()
             {
-                if (!GetTargetUnit())
+                if (!GetExplTargetUnit())
                     return SPELL_FAILED_BAD_TARGETS;
 
-                if (GetTargetUnit()->GetTypeId() != TYPEID_PLAYER)
+                if (GetExplTargetUnit()->GetTypeId() != TYPEID_PLAYER)
                     return SPELL_FAILED_TARGET_NOT_PLAYER;
 
                 SpellCustomErrors extension = SPELL_CUSTOM_ERROR_NONE;
                 SpellCastResult result = CheckRequirementInternal(extension);
                 if (result != SPELL_CAST_OK)
                 {
-                    Spell::SendCastResult(GetTargetUnit()->ToPlayer(), GetSpellInfo(), 0, result, extension);
+                    Spell::SendCastResult(GetExplTargetUnit()->ToPlayer(), GetSpellInfo(), 0, result, extension);
                     return result;
                 }
 

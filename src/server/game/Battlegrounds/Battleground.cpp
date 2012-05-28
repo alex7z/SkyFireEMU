@@ -36,13 +36,12 @@
 #include "SpellAuraEffects.h"
 #include "Util.h"
 
-namespace Skyfire
+namespace SkyFire
 {
     class BattlegroundChatBuilder
     {
         public:
-            BattlegroundChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, va_list* args = NULL)
-                : _msgtype(msgtype), _textId(textId), _source(source), _args(args) { }
+            BattlegroundChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, va_list* args = NULL) : _msgtype(msgtype), _textId(textId), _source(source), _args(args) { }
 
             void operator()(WorldPacket& data, LocaleConstant loc_idx)
             {
@@ -87,8 +86,7 @@ namespace Skyfire
     class Battleground2ChatBuilder
     {
         public:
-            Battleground2ChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, int32 arg1, int32 arg2)
-                : _msgtype(msgtype), _textId(textId), _source(source), _arg1(arg1), _arg2(arg2) {}
+            Battleground2ChatBuilder(ChatMsg msgtype, int32 textId, Player const* source, int32 arg1, int32 arg2) : _msgtype(msgtype), _textId(textId), _source(source), _arg1(arg1), _arg2(arg2) {}
 
             void operator()(WorldPacket& data, LocaleConstant loc_idx)
             {
@@ -118,7 +116,7 @@ namespace Skyfire
             int32 _arg1;
             int32 _arg2;
     };
-}                                                           // namespace Skyfire
+}                                                           // namespace SkyFire
 
 template<class Do>
 void Battleground::BroadcastWorker(Do& _do)
@@ -436,7 +434,7 @@ inline void Battleground::_ProcessJoin(uint32 diff)
     // *********************************************************
     ModifyStartDelayTime(diff);
 
-    if (_ResetStatTimer <= 5000)
+    if (_ResetStatTimer > 5000)
     {
         _ResetStatTimer = 0;
         for (BattlegroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
@@ -838,6 +836,9 @@ void Battleground::EndBattleground(uint32 winner)
                     player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_WIN_RATED_ARENA, 1);
 
                 winner_arena_team->MemberWon(player, loser_matchmaker_rating, winner_matchmaker_change);
+
+                player->ModifyCurrency(CURRENCY_TYPE_CONQUEST_POINTS, sWorld->getIntConfig(CONFIG_ARENA_CONQUEST_POINTS_REWARD) * PLAYER_CURRENCY_PRECISION);
+                player->UpdateMaxWeekRating(CP_SOURCE_ARENA, winner_arena_team->GetSlot());
             }
             else
             {
@@ -849,7 +850,7 @@ void Battleground::EndBattleground(uint32 winner)
         }
 
         uint32 winner_kills = player->GetRandomWinner() ? BG_REWARD_WINNER_HONOR_LAST : BG_REWARD_WINNER_HONOR_FIRST;
-        uint32 loser_kills = player->GetRandomWinner() ? BG_REWARD_LOSER_HONOR_LAST : BG_REWARD_LOSER_HONOR_FIRST;
+        uint32 loser_kills  = player->GetRandomWinner() ? BG_REWARD_LOSER_HONOR_LAST : BG_REWARD_LOSER_HONOR_FIRST;
         uint32 winner_arena = player->GetRandomWinner() ? BG_REWARD_WINNER_ARENA_LAST : BG_REWARD_WINNER_ARENA_FIRST;
 
         // Reward winner team
@@ -858,8 +859,12 @@ void Battleground::EndBattleground(uint32 winner)
             if (IsRandom() || BattlegroundMgr::IsBGWeekend(GetTypeID()))
             {
                 UpdatePlayerScore(player, SCORE_BONUS_HONOR, GetBonusHonorFromKill(winner_kills));
+
                 if (!player->GetRandomWinner())
+                {
+                    player->ModifyCurrency(CURRENCY_TYPE_CONQUEST_POINTS, 25 * PLAYER_CURRENCY_PRECISION);
                     player->SetRandomWinner(true);
+                }
             }
 
             player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_WIN_BG, 1);
@@ -906,7 +911,7 @@ uint32 Battleground::GetBonusHonorFromKill(uint32 kills) const
 {
     //variable kills means how many honorable kills you scored (so we need kills * honor_for_one_kill)
     uint32 maxLevel = std::min(GetMaxLevel(), 80U);
-    return Skyfire::Honor::hk_honor_at_level(maxLevel, float(kills));
+    return SkyFire::Honor::hk_honor_at_level(maxLevel, float(kills));
 }
 
 void Battleground::BlockMovement(Player* player)
@@ -970,7 +975,7 @@ void Battleground::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
                 bgTypeId=BATTLEGROUND_AA;                   // set the bg type to all arenas (it will be used for queue refreshing)
 
                 // unsummon current and summon old pet if there was one and there isn't a current pet
-                player->RemovePet(NULL, PET_SLOT_ACTUAL_PET_SLOT);
+                player->RemovePet(NULL, PET_SAVE_AS_CURRENT);
                 player->ResummonPetTemporaryUnSummonedIfAny();
 
                 if (isRated() && GetStatus() == STATUS_IN_PROGRESS)
@@ -1656,8 +1661,8 @@ void Battleground::SendMessageToAll(int32 entry, ChatMsg type, Player const* sou
     if (!entry)
         return;
 
-    Skyfire::BattlegroundChatBuilder bg_builder(type, entry, source);
-    Skyfire::LocalizedPacketDo<Skyfire::BattlegroundChatBuilder> bg_do(bg_builder);
+    SkyFire::BattlegroundChatBuilder bg_builder(type, entry, source);
+    SkyFire::LocalizedPacketDo<SkyFire::BattlegroundChatBuilder> bg_do(bg_builder);
     BroadcastWorker(bg_do);
 }
 
@@ -1669,8 +1674,8 @@ void Battleground::PSendMessageToAll(int32 entry, ChatMsg type, Player const* so
     va_list ap;
     va_start(ap, source);
 
-    Skyfire::BattlegroundChatBuilder bg_builder(type, entry, source, &ap);
-    Skyfire::LocalizedPacketDo<Skyfire::BattlegroundChatBuilder> bg_do(bg_builder);
+    SkyFire::BattlegroundChatBuilder bg_builder(type, entry, source, &ap);
+    SkyFire::LocalizedPacketDo<SkyFire::BattlegroundChatBuilder> bg_do(bg_builder);
     BroadcastWorker(bg_do);
 
     va_end(ap);
@@ -1710,8 +1715,8 @@ void Battleground::SendWarningToAll(int32 entry, ...)
 
 void Battleground::SendMessage2ToAll(int32 entry, ChatMsg type, Player const* source, int32 arg1, int32 arg2)
 {
-    Skyfire::Battleground2ChatBuilder bg_builder(type, entry, source, arg1, arg2);
-    Skyfire::LocalizedPacketDo<Skyfire::Battleground2ChatBuilder> bg_do(bg_builder);
+    SkyFire::Battleground2ChatBuilder bg_builder(type, entry, source, arg1, arg2);
+    SkyFire::LocalizedPacketDo<SkyFire::Battleground2ChatBuilder> bg_do(bg_builder);
     BroadcastWorker(bg_do);
 }
 

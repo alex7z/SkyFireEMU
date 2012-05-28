@@ -1009,7 +1009,7 @@ void Spell::SelectImplicitNearbyTargets(SpellEffIndex effIndex, SpellImplicitTar
     {
         case TARGET_OBJECT_TYPE_UNIT:
             if (Unit* unitTarget = target->ToUnit())
-                AddUnitTarget(unitTarget, effMask, false);
+                AddUnitTarget(unitTarget, effMask, true, false);
             break;
         case TARGET_OBJECT_TYPE_GOBJ:
             if (GameObject* gobjTarget = target->ToGameObject())
@@ -1042,9 +1042,9 @@ void Spell::SelectImplicitConeTargets(SpellEffIndex effIndex, SpellImplicitTarge
 
     if (uint32 containerTypeMask = GetSearcherTypeMask(objectType, condList))
     {
-        Skyfire::WorldObjectSpellConeTargetCheck check(coneAngle, radius, m_caster, m_spellInfo, selectionType, condList);
-        Skyfire::WorldObjectListSearcher<Skyfire::WorldObjectSpellConeTargetCheck> searcher(m_caster, targets, check, containerTypeMask);
-        SearchTargets<Skyfire::WorldObjectListSearcher<Skyfire::WorldObjectSpellConeTargetCheck> > (searcher, containerTypeMask, m_caster, m_caster, radius);
+        SkyFire::WorldObjectSpellConeTargetCheck check(coneAngle, radius, m_caster, m_spellInfo, selectionType, condList);
+        SkyFire::WorldObjectListSearcher<SkyFire::WorldObjectSpellConeTargetCheck> searcher(m_caster, targets, check, containerTypeMask);
+        SearchTargets<SkyFire::WorldObjectListSearcher<SkyFire::WorldObjectSpellConeTargetCheck> > (searcher, containerTypeMask, m_caster, m_caster, radius);
 
         if (!targets.empty())
         {
@@ -1053,10 +1053,10 @@ void Spell::SelectImplicitConeTargets(SpellEffIndex effIndex, SpellImplicitTarge
             {
                 Unit::AuraEffectList const& Auras = m_caster->GetAuraEffectsByType(SPELL_AURA_MOD_MAX_AFFECTED_TARGETS);
                 for (Unit::AuraEffectList::const_iterator j = Auras.begin(); j != Auras.end(); ++j)
-                    if ((*j)->IsAffectingSpell(m_spellInfo))
+                    if ((*j)->IsAffectedOnSpell(m_spellInfo))
                         maxTargets += (*j)->GetAmount();
 
-                Skyfire::RandomResizeList(targets, maxTargets);
+                SkyFire::RandomResizeList(targets, maxTargets);
             }
 
             // for compability with older code - add only unit and go targets
@@ -1275,7 +1275,7 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
                     break;
 
                 // Remove targets outside caster's raid
-                for (std::list<Unit*>::iterator itr = unitTargets.begin() ; itr != unitTargets.end();)
+                for (std::list<Unit*>::iterator itr = unitTargets.begin(); itr != unitTargets.end();)
                 {
                     if (!(*itr)->IsInRaidWith(m_caster))
                         itr = unitTargets.erase(itr);
@@ -1292,7 +1292,7 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
                 else if (m_spellInfo->SpellFamilyFlags[2] == 0x0100) // Starfall
                 {
                     // Remove targets not in LoS or in stealth
-                    for (std::list<Unit*>::iterator itr = unitTargets.begin() ; itr != unitTargets.end();)
+                    for (std::list<Unit*>::iterator itr = unitTargets.begin(); itr != unitTargets.end();)
                     {
                         if ((*itr)->HasStealthAura() || (*itr)->HasInvisibilityAura() || !(*itr)->IsWithinLOSInMap(m_caster))
                             itr = unitTargets.erase(itr);
@@ -1305,7 +1305,7 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
                     break;
 
                 // Remove targets outside caster's raid
-                for (std::list<Unit*>::iterator itr = unitTargets.begin() ; itr != unitTargets.end();)
+                for (std::list<Unit*>::iterator itr = unitTargets.begin(); itr != unitTargets.end();)
                     if (!(*itr)->IsInRaidWith(m_caster))
                         itr = unitTargets.erase(itr);
                     else
@@ -1321,13 +1321,13 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
             {
                 if (unitTargets.size() > maxSize)
                 {
-                    unitTargets.sort(Skyfire::HealthPctOrderPred());
+                    unitTargets.sort(SkyFire::HealthPctOrderPred());
                     unitTargets.resize(maxSize);
                 }
             }
             else
             {
-                for (std::list<Unit*>::iterator itr = unitTargets.begin() ; itr != unitTargets.end();)
+                for (std::list<Unit*>::iterator itr = unitTargets.begin(); itr != unitTargets.end();)
                     if ((*itr)->getPowerType() != (Powers)power)
                         itr = unitTargets.erase(itr);
                     else
@@ -1335,7 +1335,7 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
 
                 if (unitTargets.size() > maxSize)
                 {
-                    unitTargets.sort(Skyfire::PowerPctOrderPred((Powers)power));
+                    unitTargets.sort(SkyFire::PowerPctOrderPred((Powers)power));
                     unitTargets.resize(maxSize);
                 }
             }
@@ -1346,12 +1346,12 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
         {
             Unit::AuraEffectList const& Auras = m_caster->GetAuraEffectsByType(SPELL_AURA_MOD_MAX_AFFECTED_TARGETS);
             for (Unit::AuraEffectList::const_iterator j = Auras.begin(); j != Auras.end(); ++j)
-                if ((*j)->IsAffectingSpell(m_spellInfo))
+                if ((*j)->IsAffectedOnSpell(m_spellInfo))
                     maxTargets += (*j)->GetAmount();
 
             if (m_spellInfo->Id == 5246) //Intimidating Shout
                 unitTargets.remove(m_targets.GetUnitTarget());
-            Skyfire::RandomResizeList(unitTargets, maxTargets);
+            SkyFire::RandomResizeList(unitTargets, maxTargets);
         }
 
         CallScriptAfterUnitTargetSelectHandlers(unitTargets, effIndex);
@@ -1366,10 +1366,10 @@ void Spell::SelectImplicitAreaTargets(SpellEffIndex effIndex, SpellImplicitTarge
         {
             Unit::AuraEffectList const& Auras = m_caster->GetAuraEffectsByType(SPELL_AURA_MOD_MAX_AFFECTED_TARGETS);
             for (Unit::AuraEffectList::const_iterator j = Auras.begin(); j != Auras.end(); ++j)
-                if ((*j)->IsAffectingSpell(m_spellInfo))
+                if ((*j)->IsAffectedOnSpell(m_spellInfo))
                     maxTargets += (*j)->GetAmount();
 
-            Skyfire::RandomResizeList(gObjTargets, maxTargets);
+            SkyFire::RandomResizeList(gObjTargets, maxTargets);
         }
         for (std::list<GameObject*>::iterator itr = gObjTargets.begin(); itr != gObjTargets.end(); ++itr)
             AddGOTarget(*itr, effMask);
@@ -1545,7 +1545,7 @@ void Spell::SelectImplicitTargetObjectTargets(SpellEffIndex effIndex, SpellImpli
 {
     ASSERT((m_targets.GetObjectTarget() || m_targets.GetItemTarget()) && "Spell::SelectImplicitTargetObjectTargets - no explicit object or item target available!");
     if (Unit* unit = m_targets.GetUnitTarget())
-        AddUnitTarget(unit, 1 << effIndex);
+        AddUnitTarget(unit, 1 << effIndex, true, false);
     else if (GameObject* gobj = m_targets.GetGOTarget())
         AddGOTarget(gobj, 1 << effIndex);
     else
@@ -1570,8 +1570,7 @@ void Spell::SelectImplicitChainTargets(SpellEffIndex effIndex, SpellImplicitTarg
         m_applyMultiplierMask |= effMask;
 
         std::list<WorldObject*> targets;
-        SearchChainTargets(targets, maxTargets - 1, target, targetType.GetObjectType(), targetType.GetCheckType()
-            , m_spellInfo->Effects[effIndex].ImplicitTargetConditions, targetType.GetTarget() == TARGET_UNIT_TARGET_CHAINHEAL_ALLY);
+        SearchChainTargets(targets, maxTargets - 1, target, targetType.GetObjectType(), targetType.GetCheckType(), m_spellInfo->Effects[effIndex].ImplicitTargetConditions, targetType.GetTarget() == TARGET_UNIT_TARGET_CHAINHEAL_ALLY);
 
         // for backward compability
         std::list<Unit*> unitTargets;
@@ -1612,13 +1611,13 @@ void Spell::SelectImplicitTrajTargets()
     float srcToDestDelta = m_targets.GetDstPos()->m_positionZ - m_targets.GetSrcPos()->m_positionZ;
 
     std::list<WorldObject*> targets;
-    Skyfire::WorldObjectSpellTrajTargetCheck check(dist2d, m_targets.GetSrcPos(), m_caster, m_spellInfo);
-    Skyfire::WorldObjectListSearcher<Skyfire::WorldObjectSpellTrajTargetCheck> searcher(m_caster, targets, check, GRID_MAP_TYPE_MASK_ALL);
-    SearchTargets<Skyfire::WorldObjectListSearcher<Skyfire::WorldObjectSpellTrajTargetCheck> > (searcher, GRID_MAP_TYPE_MASK_ALL, m_caster, m_targets.GetSrcPos(), dist2d);
+    SkyFire::WorldObjectSpellTrajTargetCheck check(dist2d, m_targets.GetSrcPos(), m_caster, m_spellInfo);
+    SkyFire::WorldObjectListSearcher<SkyFire::WorldObjectSpellTrajTargetCheck> searcher(m_caster, targets, check, GRID_MAP_TYPE_MASK_ALL);
+    SearchTargets<SkyFire::WorldObjectListSearcher<SkyFire::WorldObjectSpellTrajTargetCheck> > (searcher, GRID_MAP_TYPE_MASK_ALL, m_caster, m_targets.GetSrcPos(), dist2d);
     if (targets.empty())
         return;
 
-    targets.sort(Skyfire::ObjectDistanceOrderPred(m_caster));
+    targets.sort(SkyFire::ObjectDistanceOrderPred(m_caster));
 
     float b = tangent(m_targets.GetElevation());
     float a = (srcToDestDelta - dist2d * b) / (dist2d * dist2d);
@@ -1854,7 +1853,7 @@ void Spell::SearchTargets(SEARCHER& searcher, uint32 containerMask, Unit* refere
         x = pos->GetPositionX();
         y = pos->GetPositionY();
 
-        CellCoord p(Skyfire::ComputeCellCoord(x, y));
+        CellCoord p(SkyFire::ComputeCellCoord(x, y));
         Cell cell(p);
         cell.SetNoCreate();
 
@@ -1868,7 +1867,7 @@ void Spell::SearchTargets(SEARCHER& searcher, uint32 containerMask, Unit* refere
         if (searchInGrid)
         {
             TypeContainerVisitor<SEARCHER, GridTypeMapContainer >  grid_object_notifier(searcher);
-            cell.Visit(p, grid_object_notifier, map, radius, x , y);
+            cell.Visit(p, grid_object_notifier, map, radius, x, y);
         }
     }
 }
@@ -1879,9 +1878,9 @@ WorldObject* Spell::SearchNearbyTarget(float range, SpellTargetObjectTypes objec
     uint32 containerTypeMask = GetSearcherTypeMask(objectType, condList);
     if (!containerTypeMask)
         return NULL;
-    Skyfire::WorldObjectSpellNearbyTargetCheck check(range, m_caster, m_spellInfo, selectionType, condList);
-    Skyfire::WorldObjectLastSearcher<Skyfire::WorldObjectSpellNearbyTargetCheck> searcher(m_caster, target, check, containerTypeMask);
-    SearchTargets<Skyfire::WorldObjectLastSearcher<Skyfire::WorldObjectSpellNearbyTargetCheck> > (searcher, containerTypeMask, m_caster, m_caster, range);
+    SkyFire::WorldObjectSpellNearbyTargetCheck check(range, m_caster, m_spellInfo, selectionType, condList);
+    SkyFire::WorldObjectLastSearcher<SkyFire::WorldObjectSpellNearbyTargetCheck> searcher(m_caster, target, check, containerTypeMask);
+    SearchTargets<SkyFire::WorldObjectLastSearcher<SkyFire::WorldObjectSpellNearbyTargetCheck> > (searcher, containerTypeMask, m_caster, m_caster, range);
     return target;
 }
 
@@ -1890,9 +1889,9 @@ void Spell::SearchAreaTargets(std::list<WorldObject*>& targets, float range, Pos
     uint32 containerTypeMask = GetSearcherTypeMask(objectType, condList);
     if (!containerTypeMask)
         return;
-    Skyfire::WorldObjectSpellAreaTargetCheck check(range, position, m_caster, referer, m_spellInfo, selectionType, condList);
-    Skyfire::WorldObjectListSearcher<Skyfire::WorldObjectSpellAreaTargetCheck> searcher(m_caster, targets, check, containerTypeMask);
-    SearchTargets<Skyfire::WorldObjectListSearcher<Skyfire::WorldObjectSpellAreaTargetCheck> > (searcher, containerTypeMask, m_caster, m_caster, range);
+    SkyFire::WorldObjectSpellAreaTargetCheck check(range, position, m_caster, referer, m_spellInfo, selectionType, condList);
+    SkyFire::WorldObjectListSearcher<SkyFire::WorldObjectSpellAreaTargetCheck> searcher(m_caster, targets, check, containerTypeMask);
+    SearchTargets<SkyFire::WorldObjectListSearcher<SkyFire::WorldObjectSpellAreaTargetCheck> > (searcher, containerTypeMask, m_caster, m_caster, range);
 }
 
 void Spell::SearchChainTargets(std::list<WorldObject*>& targets, uint32 chainTargets, WorldObject* target, SpellTargetObjectTypes objectType, SpellTargetCheckTypes selectType, ConditionList* condList, bool isChainHeal)
@@ -2078,7 +2077,7 @@ void Spell::CleanupTargetList()
     m_delayMoment = 0;
 }
 
-void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*= true*/)
+void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*= true*/, bool implicit /*= true*/)
 {
     for (uint32 effIndex = 0; effIndex < MAX_SPELL_EFFECTS; ++effIndex)
         if (!m_spellInfo->Effects[effIndex].IsEffect() || !CheckEffectTarget(target, effIndex))
@@ -2089,7 +2088,7 @@ void Spell::AddUnitTarget(Unit* target, uint32 effectMask, bool checkIfValid /*=
         return;
 
     if (checkIfValid)
-        if (m_spellInfo->CheckTarget(m_caster, target, true) != SPELL_CAST_OK)
+        if (m_spellInfo->CheckTarget(m_caster, target, implicit) != SPELL_CAST_OK)
             return;
 
     // Check for effect immune skip if immuned
@@ -2351,7 +2350,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo* target)
         spellHitTarget = unit;
     else if (missInfo == SPELL_MISS_REFLECT)                // In case spell reflect from target, do all effect on caster (if hit)
     {
-        if (target->reflectResult == SPELL_MISS_NONE)       // If reflected spell hit caster -> do all effect on him
+        if (target->reflectResult == SPELL_MISS_NONE)       // If reflected spell hit caster ->do all effect on him
         {
             spellHitTarget = m_caster;
             if (m_caster->GetTypeId() == TYPEID_UNIT)
@@ -3032,6 +3031,16 @@ void Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
         if (!m_casttime && !m_spellInfo->StartRecoveryTime && !m_castItemGUID && GetCurrentContainer() == CURRENT_GENERIC_SPELL)
             cast(true);
     }
+
+    Unit::AuraEffectList const& AurasList = m_caster->GetAuraEffectsByType(SPELL_AURA_SWAP_SPELLS);
+    for (Unit::AuraEffectList::const_iterator itr = AurasList.begin(); itr != AurasList.end(); ++itr)
+    {
+        if (!m_spellInfo->IsPositive() && m_spellInfo->CasterAuraSpell == (*itr)->GetId()) // Only remove negative spell
+        {
+            m_caster->RemoveAurasByType(SPELL_AURA_SWAP_SPELLS);
+            break;
+        }
+    }
 }
 
 void Spell::cancel()
@@ -3456,6 +3465,9 @@ void Spell::_handle_finish_phase()
         // Real add combo points from effects
         if (m_comboPointGain)
             m_caster->_movedPlayer->GainSpellComboPoints(m_comboPointGain);
+
+        if(m_spellInfo->PowerType == POWER_HOLY_POWER && m_caster->_movedPlayer->getClass() == CLASS_PALADIN)
+            HandleHolyPower(m_caster->_movedPlayer);
     }
 
     if (m_caster->_extraAttacks && GetSpellInfo()->HasEffect(SPELL_EFFECT_ADD_EXTRA_ATTACKS))
@@ -3642,7 +3654,7 @@ void Spell::finish(bool ok)
         Unit::AuraEffectList const& vIgnoreReset = m_caster->GetAuraEffectsByType(SPELL_AURA_IGNORE_MELEE_RESET);
         for (Unit::AuraEffectList::const_iterator i = vIgnoreReset.begin(); i != vIgnoreReset.end(); ++i)
         {
-            if ((*i)->IsAffectingSpell(m_spellInfo))
+            if ((*i)->IsAffectedOnSpell(m_spellInfo))
             {
                 found = true;
                 break;
@@ -4481,6 +4493,45 @@ void Spell::HandleThreatSpells()
     sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "Spell %u, added an additional %f threat for %s %u target(s)", m_spellInfo->Id, threat, m_spellInfo->_IsPositiveSpell() ? "assisting" : "harming", uint32(m_UniqueTargetInfo.size()));
 }
 
+void Spell::HandleHolyPower(Player* caster)
+{
+    if (!caster)
+        return;
+
+    bool hit = true;
+    m_powerCost = caster->GetPower(POWER_HOLY_POWER); // Always use all the holy power we have
+    Player *modOwner = caster->GetSpellModOwner();
+
+    if (!m_powerCost || !modOwner)
+        return;
+
+    if (m_spellInfo->PowerType == POWER_HOLY_POWER)
+    {
+        if (uint64 targetGUID = m_targets.GetUnitTargetGUID())
+        {
+            for (std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
+            {
+                if (ihit->targetGUID == targetGUID)
+                {
+                    if (ihit->missCondition != SPELL_MISS_NONE && ihit->missCondition != SPELL_MISS_MISS) 
+                    {
+                        hit = false;
+                    }
+                    break;
+                }
+            }
+        }
+        // The spell did hit the target, apply aura cost mods if there are any.
+        if (hit)
+        {
+            modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_COST, m_powerCost);
+            m_caster->ModifyPower(POWER_HOLY_POWER, -m_powerCost);
+        }
+        else
+            return;
+    }
+}
+
 void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGOTarget, uint32 i, SpellEffectHandleMode mode)
 {
     effectHandleMode = mode;
@@ -4562,7 +4613,7 @@ SpellCastResult Spell::CheckCast(bool strict)
         Unit::AuraEffectList const& ignore = m_caster->GetAuraEffectsByType(SPELL_AURA_MOD_IGNORE_SHAPESHIFT);
         for (Unit::AuraEffectList::const_iterator i = ignore.begin(); i != ignore.end(); ++i)
         {
-            if (!(*i)->IsAffectingSpell(m_spellInfo))
+            if (!(*i)->IsAffectedOnSpell(m_spellInfo))
                 continue;
             checkForm = false;
             break;
@@ -4588,7 +4639,7 @@ SpellCastResult Spell::CheckCast(bool strict)
     Unit::AuraEffectList const& stateAuras = m_caster->GetAuraEffectsByType(SPELL_AURA_ABILITY_IGNORE_AURASTATE);
     for (Unit::AuraEffectList::const_iterator j = stateAuras.begin(); j != stateAuras.end(); ++j)
     {
-        if ((*j)->IsAffectingSpell(m_spellInfo))
+        if ((*j)->IsAffectedOnSpell(m_spellInfo))
         {
             m_needComboPoints = false;
             if ((*j)->GetMiscValue() == 1)
@@ -4861,11 +4912,10 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELL_EFFECT_HEAL_MAX_HEALTH:
             {
                 Unit* target = m_targets.GetUnitTarget();
-                if(target)
-
+                if (target)
                 {
                     // Cannot be cast on paladin with Forbearance
-                    if (m_spellInfo->Id == 642 || m_spellInfo->Id == 1022)
+                    if (m_spellInfo->Id == 633) // Lay on Hands
                         if (target->HasAura(25771))
                             return SPELL_FAILED_TARGET_AURASTATE;
                 }
@@ -5066,10 +5116,8 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELL_EFFECT_SUMMON_DEAD_PET:
             {
                 Creature* pet = m_caster->GetGuardianPet();
-                if (!pet)
-                    return SPELL_FAILED_NO_PET;
 
-                if (pet->isAlive())
+                if (pet && pet->isAlive())
                     return SPELL_FAILED_ALREADY_HAVE_SUMMON;
 
                 break;
@@ -5233,10 +5281,10 @@ SpellCastResult Spell::CheckCast(bool strict)
                             return SPELL_FAILED_BAD_TARGETS;
                         break;
                     }
-                    /*case 61336:  //this spellid= Survival Instincts this needs checked.
-                        if (m_caster->GetTypeId() != TYPEID_PLAYER || !m_caster->ToPlayer()->IsInFeralForm())
+                    case 61336:  //this spellid= Survival Instincts this needs checked.
+                        if (m_caster->GetTypeId() != TYPEID_PLAYER || !m_caster->ToPlayer()->IsInShapeshiftForm())
                             return SPELL_FAILED_ONLY_SHAPESHIFT;
-                        break;*/
+                        break;
                     case 1515:
                     {
                         if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -5279,11 +5327,10 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELL_AURA_SCHOOL_IMMUNITY:
             {
                 Unit* target = m_targets.GetUnitTarget();
-                if(target)
-
+                if (target)
                 {
                     // Cannot be cast on paladin with Forbearance
-                    if (m_spellInfo->Id == 633)
+                    if (m_spellInfo->Id == 642 || m_spellInfo->Id == 1022) // Divine Shield - Hand of Protection
                         if (target->HasAura(25771))
                             return SPELL_FAILED_TARGET_AURASTATE;
                 }
@@ -5826,14 +5873,14 @@ SpellCastResult Spell::CheckItems()
     // check spell focus object
     if (m_spellInfo->RequiresSpellFocus)
     {
-        CellCoord p(Skyfire::ComputeCellCoord(m_caster->GetPositionX(), m_caster->GetPositionY()));
+        CellCoord p(SkyFire::ComputeCellCoord(m_caster->GetPositionX(), m_caster->GetPositionY()));
         Cell cell(p);
 
         GameObject* ok = NULL;
-        Skyfire::GameObjectFocusCheck go_check(m_caster, m_spellInfo->RequiresSpellFocus);
-        Skyfire::GameObjectSearcher<Skyfire::GameObjectFocusCheck> checker(m_caster, ok, go_check);
+        SkyFire::GameObjectFocusCheck go_check(m_caster, m_spellInfo->RequiresSpellFocus);
+        SkyFire::GameObjectSearcher<SkyFire::GameObjectFocusCheck> checker(m_caster, ok, go_check);
 
-        TypeContainerVisitor<Skyfire::GameObjectSearcher<Skyfire::GameObjectFocusCheck>, GridTypeMapContainer > object_checker(checker);
+        TypeContainerVisitor<SkyFire::GameObjectSearcher<SkyFire::GameObjectFocusCheck>, GridTypeMapContainer > object_checker(checker);
         Map& map = *m_caster->GetMap();
         cell.Visit(p, object_checker, map, *m_caster, m_caster->GetVisibilityRange());
 
@@ -5888,7 +5935,7 @@ SpellCastResult Spell::CheckItems()
 
         // check totem-item requirements (items presence in inventory)
         uint32 totems = 2;
-        for (int i = 0; i < 2 ; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             if (m_spellInfo->Totem[i] != 0)
             {
@@ -6354,7 +6401,7 @@ bool Spell::CheckEffectTarget(Unit const* target, uint32 eff) const
             // all ok by some way or another, skip normal check
             break;
         default:                                            // normal case
-            // Get GO cast coordinates if original caster -> GO
+            // Get GO cast coordinates if original caster ->GO
             WorldObject* caster = NULL;
             if (IS_GAMEOBJECT_GUID(m_originalCasterGUID))
                 caster = m_caster->GetMap()->GetGameObject(m_originalCasterGUID);
@@ -6375,7 +6422,7 @@ bool Spell::IsNextMeleeSwingSpell() const
 
 bool Spell::IsAutoActionResetSpell() const
 {
-    // TODO: changed SPELL_INTERRUPT_FLAG_AUTOATTACK -> SPELL_INTERRUPT_FLAG_INTERRUPT to fix compile - is this check correct at all?
+    // TODO: changed SPELL_INTERRUPT_FLAG_AUTOATTACK ->SPELL_INTERRUPT_FLAG_INTERRUPT to fix compile - is this check correct at all?
     return !IsTriggered() && (m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_INTERRUPT);
 }
 
@@ -6553,7 +6600,7 @@ void Spell::HandleLaunchPhase()
     Unit::AuraEffectList const& Auras = m_caster->GetAuraEffectsByType(SPELL_AURA_ABILITY_CONSUME_NO_AMMO);
     for (Unit::AuraEffectList::const_iterator j = Auras.begin(); j != Auras.end(); ++j)
     {
-        if ((*j)->IsAffectingSpell(m_spellInfo))
+        if ((*j)->IsAffectedOnSpell(m_spellInfo))
             usesAmmo=false;
     }
 
@@ -6765,11 +6812,11 @@ void Spell::LoadScripts()
 
 void Spell::CallScriptBeforeCastHandlers()
 {
-    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end() ; ++scritr)
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {
         (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_BEFORE_CAST);
         std::list<SpellScript::CastHandler>::iterator hookItrEnd = (*scritr)->BeforeCast.end(), hookItr = (*scritr)->BeforeCast.begin();
-        for (; hookItr != hookItrEnd ; ++hookItr)
+        for (; hookItr != hookItrEnd; ++hookItr)
             (*hookItr).Call(*scritr);
 
         (*scritr)->_FinishScriptCall();
@@ -6778,11 +6825,11 @@ void Spell::CallScriptBeforeCastHandlers()
 
 void Spell::CallScriptOnCastHandlers()
 {
-    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end() ; ++scritr)
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {
         (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_ON_CAST);
         std::list<SpellScript::CastHandler>::iterator hookItrEnd = (*scritr)->OnCast.end(), hookItr = (*scritr)->OnCast.begin();
-        for (; hookItr != hookItrEnd ; ++hookItr)
+        for (; hookItr != hookItrEnd; ++hookItr)
             (*hookItr).Call(*scritr);
 
         (*scritr)->_FinishScriptCall();
@@ -6791,11 +6838,11 @@ void Spell::CallScriptOnCastHandlers()
 
 void Spell::CallScriptAfterCastHandlers()
 {
-    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end() ; ++scritr)
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {
         (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_AFTER_CAST);
         std::list<SpellScript::CastHandler>::iterator hookItrEnd = (*scritr)->AfterCast.end(), hookItr = (*scritr)->AfterCast.begin();
-        for (; hookItr != hookItrEnd ; ++hookItr)
+        for (; hookItr != hookItrEnd; ++hookItr)
             (*hookItr).Call(*scritr);
 
         (*scritr)->_FinishScriptCall();
@@ -6805,7 +6852,7 @@ void Spell::CallScriptAfterCastHandlers()
 SpellCastResult Spell::CallScriptCheckCastHandlers()
 {
     SpellCastResult retVal = SPELL_CAST_OK;
-    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end() ; ++scritr)
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {
         (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_CHECK_CAST);
         std::list<SpellScript::CheckCastHandler>::iterator hookItrEnd = (*scritr)->OnCheckCast.end(), hookItr = (*scritr)->OnCheckCast.begin();
@@ -6823,7 +6870,7 @@ SpellCastResult Spell::CallScriptCheckCastHandlers()
 
 void Spell::PrepareScriptHitHandlers()
 {
-    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end() ; ++scritr)
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
         (*scritr)->_InitHit();
 }
 
@@ -6831,7 +6878,7 @@ bool Spell::CallScriptEffectHandlers(SpellEffIndex effIndex, SpellEffectHandleMo
 {
     // execute script effect handler hooks and check if effects was prevented
     bool preventDefault = false;
-    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end() ; ++scritr)
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {
         std::list<SpellScript::EffectHandler>::iterator effItr, effEndItr;
         SpellScriptHookType hookType;
@@ -6862,7 +6909,7 @@ bool Spell::CallScriptEffectHandlers(SpellEffIndex effIndex, SpellEffectHandleMo
                 return false;
         }
         (*scritr)->_PrepareScriptCall(hookType);
-        for (; effItr != effEndItr ; ++effItr)
+        for (; effItr != effEndItr; ++effItr)
             // effect execution can be prevented
             if (!(*scritr)->_IsEffectPrevented(effIndex) && (*effItr).IsEffectAffected(m_spellInfo, effIndex))
                 (*effItr).Call(*scritr, effIndex);
@@ -6877,11 +6924,11 @@ bool Spell::CallScriptEffectHandlers(SpellEffIndex effIndex, SpellEffectHandleMo
 
 void Spell::CallScriptBeforeHitHandlers()
 {
-    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end() ; ++scritr)
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {
         (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_BEFORE_HIT);
         std::list<SpellScript::HitHandler>::iterator hookItrEnd = (*scritr)->BeforeHit.end(), hookItr = (*scritr)->BeforeHit.begin();
-        for (; hookItr != hookItrEnd ; ++hookItr)
+        for (; hookItr != hookItrEnd; ++hookItr)
             (*hookItr).Call(*scritr);
 
         (*scritr)->_FinishScriptCall();
@@ -6890,11 +6937,11 @@ void Spell::CallScriptBeforeHitHandlers()
 
 void Spell::CallScriptOnHitHandlers()
 {
-    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end() ; ++scritr)
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {
         (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_HIT);
         std::list<SpellScript::HitHandler>::iterator hookItrEnd = (*scritr)->OnHit.end(), hookItr = (*scritr)->OnHit.begin();
-        for (; hookItr != hookItrEnd ; ++hookItr)
+        for (; hookItr != hookItrEnd; ++hookItr)
             (*hookItr).Call(*scritr);
 
         (*scritr)->_FinishScriptCall();
@@ -6903,11 +6950,11 @@ void Spell::CallScriptOnHitHandlers()
 
 void Spell::CallScriptAfterHitHandlers()
 {
-    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end() ; ++scritr)
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {
         (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_AFTER_HIT);
         std::list<SpellScript::HitHandler>::iterator hookItrEnd = (*scritr)->AfterHit.end(), hookItr = (*scritr)->AfterHit.begin();
-        for (; hookItr != hookItrEnd ; ++hookItr)
+        for (; hookItr != hookItrEnd; ++hookItr)
             (*hookItr).Call(*scritr);
 
         (*scritr)->_FinishScriptCall();
@@ -6916,11 +6963,11 @@ void Spell::CallScriptAfterHitHandlers()
 
 void Spell::CallScriptAfterUnitTargetSelectHandlers(std::list<Unit*>& unitTargets, SpellEffIndex effIndex)
 {
-    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end() ; ++scritr)
+    for (std::list<SpellScript*>::iterator scritr = m_loadedScripts.begin(); scritr != m_loadedScripts.end(); ++scritr)
     {
         (*scritr)->_PrepareScriptCall(SPELL_SCRIPT_HOOK_UNIT_TARGET_SELECT);
         std::list<SpellScript::UnitTargetHandler>::iterator hookItrEnd = (*scritr)->OnUnitTargetSelect.end(), hookItr = (*scritr)->OnUnitTargetSelect.begin();
-        for (; hookItr != hookItrEnd ; ++hookItr)
+        for (; hookItr != hookItrEnd; ++hookItr)
             if ((*hookItr).IsEffectAffected(m_spellInfo, effIndex))
                 (*hookItr).Call(*scritr, unitTargets);
 
@@ -6978,7 +7025,7 @@ void Spell::PrepareTriggersExecutedOnHit()
     Unit::AuraEffectList const& targetTriggers = m_caster->GetAuraEffectsByType(SPELL_AURA_ADD_TARGET_TRIGGER);
     for (Unit::AuraEffectList::const_iterator i = targetTriggers.begin(); i != targetTriggers.end(); ++i)
     {
-        if (!(*i)->IsAffectingSpell(m_spellInfo))
+        if (!(*i)->IsAffectedOnSpell(m_spellInfo))
             continue;
         SpellInfo const* auraSpellInfo = (*i)->GetSpellInfo();
         uint32 auraSpellIdx = (*i)->GetEffIndex();
@@ -7058,7 +7105,7 @@ void Spell::CancelGlobalCooldown()
         m_caster->ToPlayer()->GetGlobalCooldownMgr().CancelGlobalCooldown(m_spellInfo);
 }
 
-namespace Skyfire
+namespace SkyFire
 {
 WorldObjectSpellTargetCheck::WorldObjectSpellTargetCheck(Unit* caster, Unit* referer, SpellInfo const* spellInfo,
             SpellTargetCheckTypes selectionType, ConditionList* condList) : _caster(caster), _referer(referer), _spellInfo(spellInfo),
@@ -7203,4 +7250,4 @@ bool WorldObjectSpellTrajTargetCheck::operator()(WorldObject* target)
         return false;
     return WorldObjectSpellAreaTargetCheck::operator ()(target);
 }
-} //namespace Skyfire
+} //namespace SkyFire

@@ -292,7 +292,16 @@ HostileReference* ThreatContainer::addThreat(Unit* victim, float threat)
 void ThreatContainer::modifyThreatPercent(Unit* victim, int32 percent)
 {
     if (HostileReference* ref = getReferenceByTarget(victim))
-        ref->addThreatPercent(percent);
+    //    ref->addThreatPercent(percent);
+    {
+        if (percent < -100)
+        {
+            ref->removeReference();
+            delete ref;
+         }
+         else
+            ref->addThreatPercent(percent);
+    }
 }
 
 //============================================================
@@ -301,7 +310,7 @@ void ThreatContainer::modifyThreatPercent(Unit* victim, int32 percent)
 void ThreatContainer::update()
 {
     if (iDirty && iThreatList.size() > 1)
-        iThreatList.sort(Skyfire::ThreatOrderPred());
+        iThreatList.sort(SkyFire::ThreatOrderPred());
 
     iDirty = false;
 }
@@ -534,6 +543,7 @@ void ThreatManager::processThreatEvent(ThreatRefStatusChangeEvent* threatRefStat
                     setCurrentVictim(NULL);
                     setDirty(true);
                 }
+                iOwner->SendRemoveFromThreatListOpcode(hostilRef);
                 iThreatContainer.remove(hostilRef);
                 iThreatOfflineContainer.addReference(hostilRef);
             }

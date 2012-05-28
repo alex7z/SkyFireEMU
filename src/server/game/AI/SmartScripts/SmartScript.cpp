@@ -40,10 +40,10 @@
 #include "World.h"
 #include "Player.h"
 
-class TrinityStringTextBuilder
+class SkyFireStringTextBuilder
 {
     public:
-        TrinityStringTextBuilder(WorldObject* obj, ChatMsg msgtype, int32 id, uint32 language, uint64 targetGUID)
+        SkyFireStringTextBuilder(WorldObject* obj, ChatMsg msgtype, int32 id, uint32 language, uint64 targetGUID)
             : _source(obj), _msgType(msgtype), _textId(id), _language(language), _targetGUID(targetGUID)
         {
         }
@@ -113,8 +113,11 @@ void SmartScript::OnReset()
     ResetBaseObject();
     for (SmartAIEventList::iterator i = mEvents.begin(); i != mEvents.end(); ++i)
     {
-        InitTimer((*i));
-        (*i).runOnce = false;
+        if (!((*i).event.event_flags & SMART_EVENT_FLAG_DONT_RESET))
+        {
+            InitTimer((*i));
+            (*i).runOnce = false;
+        }
     }
     ProcessEventsFor(SMART_EVENT_RESET);
     mLastInvoker = 0;
@@ -742,7 +745,7 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
             me->DoFleeToGetAssistance();
             if (e.action.flee.withEmote)
             {
-                TrinityStringTextBuilder builder(me, CHAT_MSG_MONSTER_EMOTE, LANG_FLEE, LANG_UNIVERSAL, 0);
+                SkyFireStringTextBuilder builder(me, CHAT_MSG_MONSTER_EMOTE, LANG_FLEE, LANG_UNIVERSAL, 0);
                 sCreatureTextMgr->SendChatPacket(me, builder, CHAT_MSG_MONSTER_EMOTE);
             }
             sLog->outDebug(LOG_FILTER_DATABASE_AI, "SmartScript::ProcessAction:: SMART_ACTION_FLEE_FOR_ASSIST: Creature %u DoFleeToGetAssistance", me->GetGUIDLow());
@@ -1048,9 +1051,9 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                 break;
 
             if (e.action.invincHP.percent)
-                ai->SetInvinceabilityHpLevel(me->CountPctFromMaxHealth(e.action.invincHP.percent));
+                ai->SetInvincibilityHpLevel(me->CountPctFromMaxHealth(e.action.invincHP.percent));
             else
-                ai->SetInvinceabilityHpLevel(e.action.invincHP.minHP);
+                ai->SetInvincibilityHpLevel(e.action.invincHP.minHP);
             break;
         }
         case SMART_ACTION_SET_DATA:
@@ -1121,10 +1124,11 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
             {
                 for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
                 {
-                    if (!IsUnit(*itr))
-                        continue;
-
                     (*itr)->GetPosition(x, y, z, o);
+                    x += e.target.x;
+                    y += e.target.y;
+                    z += e.target.z;
+                    o += e.target.o;
                     if (Creature* summon = GetBaseObject()->SummonCreature(e.action.summonCreature.creature, x, y, z, o, (TempSummonType)e.action.summonCreature.type, e.action.summonCreature.duration))
                         if (unit && e.action.summonCreature.attackInvoker)
                             summon->AI()->AttackStart((*itr)->ToUnit());
@@ -1156,6 +1160,10 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                         continue;
 
                     (*itr)->GetPosition(x, y, z, o);
+                    x += e.target.x;
+                    y += e.target.y;
+                    z += e.target.z;
+                    o += e.target.o;
                     GetBaseObject()->SummonGameObject(e.action.summonGO.entry, x, y, z, o, 0, 0, 0, 0, e.action.summonGO.despawnTime);
                 }
 
@@ -1959,12 +1967,28 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
             }
             delete targets;
             break;
-                
+        }
+        case SMART_ACTION_CHARACTER_BIND:
+        {
+            ObjectList* targets = GetTargets(e, unit);
+            if (!targets)
+                break;
+
+            uint32 area_id;
+            WorldLocation loc;
+
+            for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
+            {
+                if (!IsPlayer(*itr))
+                    continue;
+                (*itr)->ToPlayer()->SetHomebind(loc, area_id);
+            }
+            delete targets;
+            break;
         }
         default:
             sLog->outErrorDb("SmartScript::ProcessAction: Unhandled Action type %u", e.GetActionType());
             break;
-
     }
 
     if (e.link && e.link != e.event_id)
@@ -2357,8 +2381,8 @@ ObjectList* SmartScript::GetWorldObjectsInDist(float dist)
     WorldObject* obj = GetBaseObject();
     if (obj)
     {
-        Skyfire::AllWorldObjectsInRange u_check(obj, dist);
-        Skyfire::WorldObjectListSearcher<Skyfire::AllWorldObjectsInRange> searcher(obj, *targets, u_check);
+        SkyFire::AllWorldObjectsInRange u_check(obj, dist);
+        SkyFire::WorldObjectListSearcher<SkyFire::AllWorldObjectsInRange> searcher(obj, *targets, u_check);
         obj->VisitNearbyObject(dist, searcher);
     }
     return targets;
@@ -3117,16 +3141,16 @@ Unit* SmartScript::DoSelectLowestHpFriendly(float range, uint32 MinHPDiff)
     if (!me)
         return NULL;
 
-    CellCoord p(Skyfire::ComputeCellCoord(me->GetPositionX(), me->GetPositionY()));
+    CellCoord p(SkyFire::ComputeCellCoord(me->GetPositionX(), me->GetPositionY()));
     Cell cell(p);
     cell.SetNoCreate();
 
     Unit* unit = NULL;
 
-    Skyfire::MostHPMissingInRange u_check(me, range, MinHPDiff);
-    Skyfire::UnitLastSearcher<Skyfire::MostHPMissingInRange> searcher(me, unit, u_check);
+    SkyFire::MostHPMissingInRange u_check(me, range, MinHPDiff);
+    SkyFire::UnitLastSearcher<SkyFire::MostHPMissingInRange> searcher(me, unit, u_check);
 
-    TypeContainerVisitor<Skyfire::UnitLastSearcher<Skyfire::MostHPMissingInRange>, GridTypeMapContainer >  grid_unit_searcher(searcher);
+    TypeContainerVisitor<SkyFire::UnitLastSearcher<SkyFire::MostHPMissingInRange>, GridTypeMapContainer >  grid_unit_searcher(searcher);
 
     cell.Visit(p, grid_unit_searcher, *me->GetMap(), *me, range);
     return unit;
@@ -3137,14 +3161,14 @@ void SmartScript::DoFindFriendlyCC(std::list<Creature*>& _list, float range)
     if (!me)
         return;
 
-    CellCoord p(Skyfire::ComputeCellCoord(me->GetPositionX(), me->GetPositionY()));
+    CellCoord p(SkyFire::ComputeCellCoord(me->GetPositionX(), me->GetPositionY()));
     Cell cell(p);
     cell.SetNoCreate();
 
-    Skyfire::FriendlyCCedInRange u_check(me, range);
-    Skyfire::CreatureListSearcher<Skyfire::FriendlyCCedInRange> searcher(me, _list, u_check);
+    SkyFire::FriendlyCCedInRange u_check(me, range);
+    SkyFire::CreatureListSearcher<SkyFire::FriendlyCCedInRange> searcher(me, _list, u_check);
 
-    TypeContainerVisitor<Skyfire::CreatureListSearcher<Skyfire::FriendlyCCedInRange>, GridTypeMapContainer >  grid_creature_searcher(searcher);
+    TypeContainerVisitor<SkyFire::CreatureListSearcher<SkyFire::FriendlyCCedInRange>, GridTypeMapContainer >  grid_creature_searcher(searcher);
 
     cell.Visit(p, grid_creature_searcher, *me->GetMap(), *me, range);
 }
@@ -3154,14 +3178,14 @@ void SmartScript::DoFindFriendlyMissingBuff(std::list<Creature*>& list, float ra
     if (!me)
         return;
 
-    CellCoord p(Skyfire::ComputeCellCoord(me->GetPositionX(), me->GetPositionY()));
+    CellCoord p(SkyFire::ComputeCellCoord(me->GetPositionX(), me->GetPositionY()));
     Cell cell(p);
     cell.SetNoCreate();
 
-    Skyfire::FriendlyMissingBuffInRange u_check(me, range, spellid);
-    Skyfire::CreatureListSearcher<Skyfire::FriendlyMissingBuffInRange> searcher(me, list, u_check);
+    SkyFire::FriendlyMissingBuffInRange u_check(me, range, spellid);
+    SkyFire::CreatureListSearcher<SkyFire::FriendlyMissingBuffInRange> searcher(me, list, u_check);
 
-    TypeContainerVisitor<Skyfire::CreatureListSearcher<Skyfire::FriendlyMissingBuffInRange>, GridTypeMapContainer >  grid_creature_searcher(searcher);
+    TypeContainerVisitor<SkyFire::CreatureListSearcher<SkyFire::FriendlyMissingBuffInRange>, GridTypeMapContainer >  grid_creature_searcher(searcher);
 
     cell.Visit(p, grid_creature_searcher, *me->GetMap(), *me, range);
 }

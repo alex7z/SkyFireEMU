@@ -719,7 +719,7 @@ SpellSpellGroupMapBounds SpellMgr::GetSpellSpellGroupMapBounds(uint32 spell_id) 
 uint32 SpellMgr::IsSpellMemberOfSpellGroup(uint32 spellid, SpellGroup groupid) const
 {
     SpellSpellGroupMapBounds spellGroup = GetSpellSpellGroupMapBounds(spellid);
-    for (SpellSpellGroupMap::const_iterator itr = spellGroup.first; itr != spellGroup.second ; ++itr)
+    for (SpellSpellGroupMap::const_iterator itr = spellGroup.first; itr != spellGroup.second; ++itr)
     {
         if (itr->second == groupid)
             return true;
@@ -745,7 +745,7 @@ void SpellMgr::GetSetOfSpellsInSpellGroup(SpellGroup group_id, std::set<uint32>&
     usedGroups.insert(group_id);
 
     SpellGroupSpellMapBounds groupSpell = GetSpellGroupSpellMapBounds(group_id);
-    for (SpellGroupSpellMap::const_iterator itr = groupSpell.first; itr != groupSpell.second ; ++itr)
+    for (SpellGroupSpellMap::const_iterator itr = groupSpell.first; itr != groupSpell.second; ++itr)
     {
         if (itr->second < 0)
         {
@@ -764,7 +764,7 @@ bool SpellMgr::AddSameEffectStackRuleSpellGroups(SpellInfo const* spellInfo, int
     uint32 spellId = spellInfo->GetFirstRankSpell()->Id;
     SpellSpellGroupMapBounds spellGroup = GetSpellSpellGroupMapBounds(spellId);
     // Find group with SPELL_GROUP_STACK_RULE_EXCLUSIVE_SAME_EFFECT if it belongs to one
-    for (SpellSpellGroupMap::const_iterator itr = spellGroup.first; itr != spellGroup.second ; ++itr)
+    for (SpellSpellGroupMap::const_iterator itr = spellGroup.first; itr != spellGroup.second; ++itr)
     {
         SpellGroup group = itr->second;
         SpellGroupStackMap::const_iterator found = mSpellGroupStack.find(group);
@@ -800,13 +800,13 @@ SpellGroupStackRule SpellMgr::CheckSpellGroupStackRules(SpellInfo const* spellIn
     // find SpellGroups which are common for both spells
     SpellSpellGroupMapBounds spellGroup1 = GetSpellSpellGroupMapBounds(spellid_1);
     std::set<SpellGroup> groups;
-    for (SpellSpellGroupMap::const_iterator itr = spellGroup1.first; itr != spellGroup1.second ; ++itr)
+    for (SpellSpellGroupMap::const_iterator itr = spellGroup1.first; itr != spellGroup1.second; ++itr)
     {
         if (IsSpellMemberOfSpellGroup(spellid_2, itr->second))
         {
             bool add = true;
             SpellGroupSpellMapBounds groupSpell = GetSpellGroupSpellMapBounds(itr->second);
-            for (SpellGroupSpellMap::const_iterator itr2 = groupSpell.first; itr2 != groupSpell.second ; ++itr2)
+            for (SpellGroupSpellMap::const_iterator itr2 = groupSpell.first; itr2 != groupSpell.second; ++itr2)
             {
                 if (itr2->second < 0)
                 {
@@ -825,7 +825,7 @@ SpellGroupStackRule SpellMgr::CheckSpellGroupStackRules(SpellInfo const* spellIn
 
     SpellGroupStackRule rule = SPELL_GROUP_STACK_RULE_DEFAULT;
 
-    for (std::set<SpellGroup>::iterator itr = groups.begin() ; itr!= groups.end() ; ++itr)
+    for (std::set<SpellGroup>::iterator itr = groups.begin(); itr!= groups.end(); ++itr)
     {
         SpellGroupStackMap::const_iterator found = mSpellGroupStack.find(*itr);
         if (found != mSpellGroupStack.end())
@@ -1201,7 +1201,7 @@ bool SpellArea::IsFitToRequirements(Player const* player, uint32 newZone, uint32
             if (!player)
                 return false;
 
-            Battlefield* Bf = sBattlefieldMgr.GetBattlefieldToZoneId(player->GetZoneId());
+            Battlefield* Bf = sBattlefieldMgr->GetBattlefieldToZoneId(player->GetZoneId());
             if (!Bf || Bf->CanFlyIn() || (!player->HasAuraType(SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED) && !player->HasAuraType(SPELL_AURA_FLY)))
                 return false;
             break;
@@ -1241,7 +1241,7 @@ void SpellMgr::LoadSpellRanks()
     }
     mSpellChains.clear();                                // need for reload case
 
-    QueryResult result = WorldDatabase.Query("SELECT first_spell_id, spell_id, rank from spell_ranks ORDER BY first_spell_id , rank");
+    QueryResult result = WorldDatabase.Query("SELECT first_spell_id, spell_id, rank from spell_ranks ORDER BY first_spell_id, rank");
 
     if (!result)
     {
@@ -1298,7 +1298,7 @@ void SpellMgr::LoadSpellRanks()
         int32 curRank = 0;
         bool valid = true;
         // check spells in chain
-        for (std::list<std::pair<int32, int32> >::iterator itr = rankChain.begin() ; itr!= rankChain.end(); ++itr)
+        for (std::list<std::pair<int32, int32> >::iterator itr = rankChain.begin(); itr!= rankChain.end(); ++itr)
         {
             SpellInfo const* spell = GetSpellInfo(itr->first);
             if (!spell)
@@ -1733,12 +1733,12 @@ void SpellMgr::LoadSpellGroups()
         }
     }
 
-    for (std::set<uint32>::iterator groupItr = groups.begin() ; groupItr != groups.end() ; ++groupItr)
+    for (std::set<uint32>::iterator groupItr = groups.begin(); groupItr != groups.end(); ++groupItr)
     {
         std::set<uint32> spells;
         GetSetOfSpellsInSpellGroup(SpellGroup(*groupItr), spells);
 
-        for (std::set<uint32>::iterator spellItr = spells.begin() ; spellItr != spells.end() ; ++spellItr)
+        for (std::set<uint32>::iterator spellItr = spells.begin(); spellItr != spells.end(); ++spellItr)
         {
             ++count;
             mSpellSpellGroup.insert(SpellSpellGroupMap::value_type(*spellItr, SpellGroup(*groupItr)));
@@ -2839,7 +2839,7 @@ void SpellMgr::UnloadSpellInfoStore()
     }
     mSpellInfoMap.clear();
 }
-
+/*
 void SpellMgr::UnloadSpellInfoImplicitTargetConditionLists()
 {
     for (uint32 i = 0; i < mSpellInfoMap.size(); ++i)
@@ -2848,7 +2848,7 @@ void SpellMgr::UnloadSpellInfoImplicitTargetConditionLists()
             mSpellInfoMap[i]->_UnloadImplicitTargetConditionLists();
     }
 }
-
+*/
 void SpellMgr::LoadSpellCustomAttr()
 {
     uint32 oldMSTime = getMSTime();
@@ -2996,9 +2996,6 @@ void SpellMgr::LoadSpellCustomAttr()
             case 5484:  // Howl of Terror
                 spellInfo->AuraInterruptFlags = AURA_INTERRUPT_FLAG_TAKE_DAMAGE;
                 break;
-            case 89023: // Blessed life (spell, not talent)
-                spellInfo->Effects[1].Effect = 0;
-                break;
             case 1680: // Whirlwind  (Fury)
                 spellInfo->Effects[0].RadiusEntry = sSpellRadiusStore.LookupEntry (14);
                 spellInfo->Effects[1].RadiusEntry = sSpellRadiusStore.LookupEntry (14);
@@ -3011,6 +3008,14 @@ void SpellMgr::LoadSpellCustomAttr()
                 break;
             case 42835: // Spout
                 spellInfo->Effects[0].Effect = 0; // remove damage effect, only anim is needed
+                break;
+            // Need this otherwise we'll be having multiple chance rolls for judgement.
+            case 85117: // Divine Purpose (Rank 1)
+            case 86172: // Divine Purpose (Rank 2)
+                spellInfo->AttributesEx3 = 0; 
+                break;
+            case 90174: // Divine Purpose Proc
+                spellInfo->ProcCharges = 1;
                 break;
             case 30657: // Quake
                 spellInfo->Effects[0].TriggerSpell = 30571;
@@ -3030,6 +3035,14 @@ void SpellMgr::LoadSpellCustomAttr()
             case 42818: // Headless Horseman - Wisp Flight Port
             case 42821: // Headless Horseman - Wisp Flight Missile
                 spellInfo->RangeEntry = sSpellRangeStore.LookupEntry(6); // 100 yards
+                break;
+            case 77758: // Thrash
+                spellInfo->Effects[0].RadiusEntry = sSpellRadiusStore.LookupEntry(14);
+                spellInfo->Effects[1].RadiusEntry = sSpellRadiusStore.LookupEntry(14);
+                break;
+            case 87193: // Paralysis
+            case 87194:
+                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_MOD_ROOT;
                 break;
             case 36350: // They Must Burn Bomb Aura (self)
                 spellInfo->Effects[0].TriggerSpell = 36325; // They Must Burn Bomb Drop (DND)
@@ -3154,11 +3167,12 @@ void SpellMgr::LoadSpellCustomAttr()
             case 64823: // Item - Druid T8 Balance 4P Bonus
             case 34477: // Misdirection
             case 44401: // Missile Barrage
+            case 46915: // Bloodsurge
                 spellInfo->ProcCharges = 1;
                 break;
             case 84726: // Frostfire orb rank 1
             case 84727: // Frostfire orb rank 2
-                spellInfo->Effects[1].ApplyAuraName = SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_2;
+                spellInfo->Effects[1].ApplyAuraName = SPELL_AURA_SWAP_SPELLS;
                 spellInfo->Effects[1].BasePoints = 92283;
                 break;
             case 44544: // Fingers of Frost
@@ -3303,20 +3317,35 @@ void SpellMgr::LoadSpellCustomAttr()
                 break;
             case 81585: // Chakra: Serenity replace
                 spellInfo->Effects[0].Effect = SPELL_EFFECT_APPLY_AURA;
-                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_1;
+                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_SWAP_SPELLS;
                 spellInfo->Effects[0].BasePoints = 88684;
                 break;
             case 81207: // Chakra: Sanctuary replace
                 spellInfo->Effects[0].Effect = SPELL_EFFECT_APPLY_AURA;
-                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_1;
+                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_SWAP_SPELLS;
                 spellInfo->Effects[0].BasePoints = 88685;
                 break;
             case 68659: // Launch
                 spellInfo->Effects[1].TriggerSpell = 4336;
                 break;
+            case 50421: // Scent of Blood
+                spellInfo->Effects[0].TriggerSpell = 50422;
+                break;
+            case 85084: // Howling Gale
+                spellInfo->Effects[0].TriggerSpell = 85085;
+                break;
+            case 85085: // Howling Gale
+                spellInfo->Effects[0].RadiusEntry = sSpellRadiusStore.LookupEntry(18); // 15 yard
+                break;
+            case 84101: // Deepholm Intro Taxi
+                spellInfo->Effects[0].Effect = SPELL_EFFECT_DUMMY;
+                break;
+            case 50029: // Veteran of the Third War
+                spellInfo->Effects[0].MiscValue = 2;
+                break;
             case 94338: // Sunfire (Eclipse)
                 spellInfo->Effects[0].Effect = SPELL_EFFECT_APPLY_AURA;
-                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_1;
+                spellInfo->Effects[0].ApplyAuraName = SPELL_AURA_SWAP_SPELLS;
                 spellInfo->Effects[0].BasePoints = 93402;
                 break;
             case 70728: // Exploit Weakness (needs target selection script)
@@ -3324,16 +3353,12 @@ void SpellMgr::LoadSpellCustomAttr()
                 spellInfo->Effects[0].TargetA = TARGET_UNIT_CASTER;
                 spellInfo->Effects[0].TargetB = TARGET_UNIT_PET;
                 break;
+            case 82992: // Crowley's ride vehicle
+                spellInfo->Effects[0].BasePoints = 60683;
+                break;
             case 70893: // Culling The Herd (needs target selection script)
                 spellInfo->Effects[0].TargetA = TARGET_UNIT_CASTER;
                 spellInfo->Effects[0].TargetB = TARGET_UNIT_MASTER;
-                break;
-            case 81782: // Power Word: Barrier
-                spellInfo->Effects[0].TargetA = TARGET_UNIT_TARGET_ALLY;
-                spellInfo->Effects[1].TargetA = TARGET_UNIT_TARGET_ALLY;
-                spellInfo->Effects[0].TargetB = TARGET_NONE;
-                spellInfo->Effects[1].TargetB = TARGET_NONE;
-                spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(39);
                 break;
             case 54800: // Sigil of the Frozen Conscience - change class mask to custom extended flags of Icy Touch
                         // this is done because another spell also uses the same SpellFamilyFlags as Icy Touch
@@ -3523,11 +3548,7 @@ void SpellMgr::LoadSpellCustomAttr()
                 spellInfo->Effects[1].TargetA = TARGET_UNIT_TARGET_ENEMY;
                 spellInfo->Effects[0].BasePoints = 20*1000;
             break;
-            case 1776: // Gouge
-            case 1777:
-            case 8629:
-            case 11285:
-            case 11286:
+            case 1776:  // Gouge
             case 12540:
             case 13579:
             case 24698:
@@ -3535,52 +3556,14 @@ void SpellMgr::LoadSpellCustomAttr()
             case 29425:
             case 34940:
             case 36862:
-            case 38764:
             case 38863:
             case 52743: // Head Smack
                 spellInfo->AttributesCu |= SPELL_ATTR0_CU_REQ_TARGET_FACING_CASTER;
                 break;
-            case 53: // Backstab
-            case 2589:
-            case 2590:
-            case 2591:
-            case 8721:
-            case 11279:
-            case 11280:
-            case 11281:
-            case 25300:
-            case 26863:
-            case 48656:
-            case 48657:
-            case 703: // Garrote
-            case 8631:
-            case 8632:
-            case 8633:
-            case 11289:
-            case 11290:
-            case 26839:
-            case 26884:
-            case 48675:
-            case 48676:
-            case 5221: // Shred
-            case 6800:
-            case 8992:
-            case 9829:
-            case 9830:
-            case 27001:
-            case 27002:
-            case 48571:
-            case 48572:
-            case 8676: // Ambush
-            case 8724:
-            case 8725:
-            case 11267:
-            case 11268:
-            case 11269:
-            case 27441:
-            case 48689:
-            case 48690:
-            case 48691:
+            case 53:    // Backstab
+            case 703:   // Garrote
+            case 5221:  // Shred
+            case 8676:  // Ambush
             case 6785:  // Ravage
             case 81170:
             case 21987: // Lash of Pain
@@ -3683,10 +3666,6 @@ void SpellMgr::LoadSpellCustomAttr()
             case 74522: // Skinning (Grandmaster)
                 // 4.06 dbc issue which was fixed in 4.20 (or 4.10?)
                 spellInfo->Effects[1].BasePoints = 7;
-                break;
-            case 86150: // Guardian of Ancient Kings
-                spellInfo->Effects[0].TriggerSpell = 86698;
-                spellInfo->Effects[0].TargetA = TARGET_UNIT_CASTER;
                 break;
             default:
                 break;

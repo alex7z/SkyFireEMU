@@ -102,7 +102,6 @@ set(scripts_STAT_SRCS
   EasternKingdoms/MoltenCore/instance_molten_core.cpp
   EasternKingdoms/MoltenCore/boss_sulfuron_harbinger.cpp
   EasternKingdoms/MoltenCore/boss_magmadar.cpp
-  EasternKingdoms/MoltenCore/molten_core.cpp
   EasternKingdoms/MoltenCore/boss_shazzrah.cpp
   
   EasternKingdoms/Stratholme/boss_baroness_anastari.cpp
@@ -124,8 +123,7 @@ set(scripts_STAT_SRCS
   EasternKingdoms/ThroneOfTheTides/boss_commander_ulthok.cpp
   EasternKingdoms/ThroneOfTheTides/boss_erunak_stonespeaker.cpp
   EasternKingdoms/ThroneOfTheTides/boss_lady_nazjar.cpp
-  EasternKingdoms/ThroneOfTheTides/boss_mindbender_ghursha.cpp
-  EasternKingdoms/ThroneOfTheTides/boss_ozumat.cpp
+  EasternKingdoms/ThroneOfTheTides/npc_neptulon.cpp
   EasternKingdoms/ThroneOfTheTides/instance_throne_of_the_tides.cpp  
   
   EasternKingdoms/SunkenTemple/sunken_temple.cpp

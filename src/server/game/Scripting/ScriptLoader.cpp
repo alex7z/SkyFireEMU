@@ -82,7 +82,6 @@ void AddSC_npc_innkeeper();
 void AddSC_npcs_special();
 void AddSC_npc_taxi();
 void AddSC_achievement_scripts();
-void AddSC_multi_profession_npc();
 
 //eastern kingdoms
 void AddSC_elwynn_forest();
@@ -192,7 +191,6 @@ void AddSC_boss_sulfuron();
 void AddSC_boss_majordomo();
 void AddSC_boss_ragnaros();
 void AddSC_instance_molten_core();
-void AddSC_molten_core();
 void AddSC_the_scarlet_enclave();            //Scarlet Enclave
 void AddSC_the_scarlet_enclave_c1();
 void AddSC_the_scarlet_enclave_c2();
@@ -252,12 +250,11 @@ void AddSC_boss_eredar_twins();
 void AddSC_boss_muru();
 void AddSC_boss_kiljaeden();
 void AddSC_sunwell_plateau();
-void AddSC_instance_throne_of_the_tides();   //Abyssal Maw: Throne of the Tides
-void AddSC_boss_ozumat();
-void AddSC_boss_ghursha();
-void AddSC_boss_nazjar();
+void AddSC_boss_lady_nazjar();              //Throne of the Tides
+void AddSC_boss_commander_ulthok();
 void AddSC_boss_erunak_stonespeaker();
-void AddSC_boss_ulthok();
+void AddSC_neptulon();
+void AddSC_instance_throne_of_the_tides();
 void AddSC_boss_archaedas();                 //Uldaman
 void AddSC_boss_ironaya();
 void AddSC_uldaman();
@@ -768,7 +765,6 @@ void AddWorldScripts()
     AddSC_npc_taxi();
     AddSC_achievement_scripts();
     AddSC_chat_log();
-    AddSC_multi_profession_npc();
 #endif
 }
 
@@ -881,7 +877,6 @@ void AddEasternKingdomsScripts()
     AddSC_boss_majordomo();
     AddSC_boss_ragnaros();
     AddSC_instance_molten_core();
-    AddSC_molten_core();
     AddSC_the_scarlet_enclave();            //Scarlet Enclave
     AddSC_the_scarlet_enclave_c1();
     AddSC_the_scarlet_enclave_c2();
@@ -941,12 +936,11 @@ void AddEasternKingdomsScripts()
     AddSC_boss_muru();
     AddSC_boss_kiljaeden();
     AddSC_sunwell_plateau();
-    AddSC_instance_throne_of_the_tides();   //Abyssal Maw: Throne of the Tides
-    AddSC_boss_ozumat();
-    AddSC_boss_ghursha();
-    AddSC_boss_nazjar();
+    AddSC_boss_lady_nazjar();              //Throne of the Tides
+    AddSC_boss_commander_ulthok();
     AddSC_boss_erunak_stonespeaker();
-    AddSC_boss_ulthok();
+    AddSC_neptulon();
+    AddSC_instance_throne_of_the_tides();
     AddSC_boss_archaedas();                 //Uldaman
     AddSC_boss_ironaya();
     AddSC_uldaman();

@@ -85,15 +85,9 @@ typedef TypeMapContainer<AllWorldObjectTypes> WorldTypeMapContainer;
 template<uint32 LIMIT>
 struct CoordPair
 {
-    CoordPair(uint32 x=0, uint32 y=0)
-        : x_coord(x)
-        , y_coord(y)
-    {}
+    CoordPair(uint32 x=0, uint32 y=0) : x_coord(x), y_coord(y) {}
 
-    CoordPair(const CoordPair<LIMIT> &obj)
-        : x_coord(obj.x_coord)
-        , y_coord(obj.y_coord)
-    {}
+    CoordPair(const CoordPair<LIMIT> &obj) : x_coord(obj.x_coord), y_coord(obj.y_coord) {}
 
     CoordPair<LIMIT> & operator=(const CoordPair<LIMIT> &obj)
     {
@@ -169,7 +163,7 @@ bool operator!=(const CoordPair<LIMIT> &p1, const CoordPair<LIMIT> &p2)
 typedef CoordPair<MAX_NUMBER_OF_GRIDS> GridCoord;
 typedef CoordPair<TOTAL_NUMBER_OF_CELLS_PER_MAP> CellCoord;
 
-namespace Skyfire
+namespace SkyFire
 {
     template<class RET_TYPE, int CENTER_VAL>
         inline RET_TYPE Compute(float x, float y, float center_offset, float size)

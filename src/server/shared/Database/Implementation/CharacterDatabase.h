@@ -81,10 +81,6 @@ enum CharacterDatabaseStatements
     CHAR_SEL_BANNED_NAME,
     CHAR_SEL_ENUM,
     CHAR_SEL_ENUM_DECLINED_NAME,
-    CHAR_SEL_PET_SLOTS,
-    CHAR_SEL_PET_SLOTS_DETAIL,
-    CHAR_SEL_PET_ENTRY,
-    CHAR_SEL_PET_SLOT_BY_ID,
     CHAR_SEL_FREE_NAME,
     CHAR_SEL_GUID_RACE_ACC_BY_NAME,
     CHAR_SEL_CHAR_RACE,
@@ -266,7 +262,8 @@ enum CharacterDatabaseStatements
 
     // Currency
     CHAR_LOAD_PLAYER_CURRENCY,
-
+    CHAR_LOAD_PLAYER_CP_WEEK_CAP, // conquest points
+    
     // Tutorials
     CHAR_LOAD_TUTORIALS,
     CHAR_GET_HAS_TUTORIALS,
@@ -352,6 +349,12 @@ enum CharacterDatabaseStatements
     CHAR_ADD_GM_SURVEY,
     CHAR_ADD_GM_SUBSURVEY,
     CHAR_ADD_LAG_REPORT,
+
+    // Pet
+    CHAR_SEL_PET_SLOTS,
+    CHAR_SEL_PET_SLOTS_DETAIL,
+    CHAR_SEL_PET_ENTRY,
+    CHAR_SEL_PET_SLOT_BY_ID,
 
     CHAR_ADD_CHARACTER,
     CHAR_UPD_CHARACTER,

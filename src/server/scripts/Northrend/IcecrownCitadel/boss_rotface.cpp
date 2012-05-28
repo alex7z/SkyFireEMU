@@ -446,14 +446,14 @@ class spell_rotface_ooze_flood : public SpellScriptLoader
                 if (triggers.empty())
                     return;
 
-                triggers.sort(Skyfire::ObjectDistanceOrderPred(GetHitUnit()));
+                triggers.sort(SkyFire::ObjectDistanceOrderPred(GetHitUnit()));
                 GetHitUnit()->CastSpell(triggers.back(), uint32(GetEffectValue()), false, NULL, NULL, GetOriginalCaster() ? GetOriginalCaster()->GetGUID() : 0);
             }
 
             void FilterTargets(std::list<Unit*>& targetList)
             {
                 // get 2 targets except 2 nearest
-                targetList.sort(Skyfire::ObjectDistanceOrderPred(GetCaster()));
+                targetList.sort(SkyFire::ObjectDistanceOrderPred(GetCaster()));
 
                 // .resize() runs pop_back();
                 if (targetList.size() > 4)
@@ -495,7 +495,7 @@ class spell_rotface_mutated_infection : public SpellScriptLoader
             {
                 // remove targets with this aura already
                 // tank is not on this list
-                targets.remove_if (Skyfire::UnitAuraCheck(true, GetSpellInfo()->Id));
+                targets.remove_if (SkyFire::UnitAuraCheck(true, GetSpellInfo()->Id));
                 if (targets.empty())
                     return;
 
@@ -717,13 +717,13 @@ class spell_rotface_unstable_ooze_explosion : public SpellScriptLoader
             void CheckTarget(SpellEffIndex effIndex)
             {
                 PreventHitDefaultEffect(EFFECT_0);
-                if (!GetTargetDest())
+                if (!GetExplTargetDest())
                     return;
 
                 uint32 triggered_spell_id = GetSpellInfo()->Effects[effIndex].TriggerSpell;
 
                 float x, y, z;
-                GetTargetDest()->GetPosition(x, y, z);
+                GetExplTargetDest()->GetPosition(x, y, z);
                 // let Rotface handle the cast - caster dies before this executes
                 if (InstanceScript* script = GetCaster()->GetInstanceScript())
                     if (Creature* rotface = script->instance->GetCreature(script->GetData64(DATA_ROTFACE)))

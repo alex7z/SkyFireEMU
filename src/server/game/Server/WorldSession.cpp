@@ -43,6 +43,8 @@
 #include "zlib.h"
 #include "ScriptMgr.h"
 #include "Transport.h"
+#include "WardenWin.h"
+#include "WardenMac.h"
 
 bool MapSessionFilter::Process(WorldPacket* packet)
 {
@@ -77,7 +79,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
     if (opHandle.packetProcessing == PROCESS_THREADUNSAFE)
         return true;
 
-    //no player attached? -> our client! ^^
+    //no player attached? ->our client! ^^
     Player* player = m_pSession->GetPlayer();
     if (!player)
         return true;
@@ -97,6 +99,8 @@ m_sessionDbLocaleIndex(locale),
 m_latency(0), m_TutorialsChanged(false), recruiterId(recruiter),
 isRecruiter(isARecruiter), timeLastWhoCommand(0)
 {
+    _warden = NULL;
+
     if (sock)
     {
         m_Address = sock->GetRemoteAddress();
@@ -123,6 +127,9 @@ WorldSession::~WorldSession()
         m_Socket = NULL;
     }
 
+    if (_warden)
+        delete _warden;
+
     ///- empty incoming packet queue
     WorldPacket* packet = NULL;
     while (_recvQueue.next(packet))
@@ -141,6 +148,12 @@ void WorldSession::SizeError(WorldPacket const &packet, uint32 size) const
 char const* WorldSession::GetPlayerName() const
 {
     return GetPlayer() ? GetPlayer()->GetName() : "<none>";
+}
+
+/// Get player guid if available. Use for logging purposes only
+uint32 WorldSession::GetGuidLow() const
+{
+    return GetPlayer() ? GetPlayer()->GetGUIDLow() : 0;
 }
 
 /// Send a packet to the client
@@ -319,7 +332,7 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
                         LogUnprocessedTail(packet);
                     break;
                 case STATUS_NEVER:
-                    sLog->outError("SESSION (account: %u, guidlow: %u, char: %s): received not allowed opcode %s (0x%.4X)",
+                    sLog->outDebug(LOG_FILTER_NETWORKIO, "SESSION (account: %u, guidlow: %u, char: %s): received not allowed opcode %s (0x%.4X)",
                         GetAccountId(), m_GUIDLow, _player ? _player->GetName() : "<none>",
                         LookupOpcodeName(packet->GetOpcode()), packet->GetOpcode());
                     break;
@@ -345,6 +358,9 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
             delete packet;
     }
 
+    if (m_Socket && !m_Socket->IsClosed() && _warden)
+        _warden->Update();
+
     ProcessQueryCallbacks();
 
     //check if we are safe to proceed with logout
@@ -355,6 +371,9 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
         ///- If necessary, log the player out
         if (ShouldLogOut(currTime) && !m_playerLoading)
             LogoutPlayer(true);
+
+        if (m_Socket && GetPlayer() && _warden)
+            _warden->Update();
 
         ///- Cleanup socket pointer if need
         if (m_Socket && m_Socket->IsClosed())
@@ -468,7 +487,7 @@ void WorldSession::LogoutPlayer(bool Save)
             guild->HandleMemberLogout(this);
 
         ///- Remove pet
-        _player->RemovePet(NULL, PET_SLOT_ACTUAL_PET_SLOT, true);
+        _player->RemovePet(NULL, PET_SAVE_AS_CURRENT, true);
 
         ///- empty buyback items and save the player in the database
         // some save parts only correctly work in case player present in map/player_lists (pets, etc)
@@ -716,7 +735,7 @@ void WorldSession::SendAccountDataTimes(uint32 mask)
 
 void WorldSession::LoadTutorialsData()
 {
-    for (int aX = 0 ; aX < MAX_ACCOUNT_TUTORIAL_VALUES ; ++aX)
+    for (int aX = 0; aX < MAX_ACCOUNT_TUTORIAL_VALUES; ++aX)
         m_Tutorials[ aX ] = 0;
 
     QueryResult result = CharacterDatabase.PQuery("SELECT tut0, tut1, tut2, tut3, tut4, tut5, tut6, tut7 FROM account_tutorial WHERE accountid = '%u'", GetAccountId());
@@ -1112,9 +1131,24 @@ void WorldSession::ProcessQueryCallbacks()
     //- HandleStableSwapPet
     if (_stableSwapCallback.IsReady())
     {
-        uint32 param = _stableSwapCallback.GetParam();
+        uint8 param = _stableSwapCallback.GetParam();
         _stableSwapCallback.GetResult(result);
         HandleStableSwapPetCallback(result, param);
         _stableSwapCallback.FreeResult();
     }
+}
+
+void WorldSession::InitWarden(BigNumber* k, std::string os)
+{
+   if (os == "Win")
+   {
+       _warden = new WardenWin();
+       _warden->Init(this, k);
+   }
+   else if (os == "OSX")
+   {
+       // Disabled as it is causing the client to crash
+       // _warden = new WardenMac();
+       // _warden->Init(this, k);
+   }
 }

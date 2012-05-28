@@ -63,7 +63,7 @@ typedef std::deque<Mail*> PlayerMails;
 #define PLAYER_MAX_DAILY_QUESTS     25
 #define PLAYER_EXPLORED_ZONES_SIZE  144
 
-// 2^n values, Player::m_isunderwater is a bitmask. These are Skyfire internal values, they are never send to any client
+// 2^n values, Player::m_isunderwater is a bitmask. These are SkyFire internal values, they are never send to any client
 enum PlayerUnderwaterState
 {
     UNDERWATER_NONE                     = 0x00,
@@ -846,6 +846,7 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOADSEASONALQUESTSTATUS  = 31,
     PLAYER_LOGIN_QUERY_LOADTALENTBRANCHSPECS    = 32,
     PLAYER_LOGIN_QUERY_LOAD_CURRENCY            = 33,
+    PLAYER_LOGIN_QUERY_LOAD_CP_WEEK_CAP         = 34,
     MAX_PLAYER_LOGIN_QUERY,
 };
 
@@ -908,6 +909,13 @@ enum CurrencyItems
 {
     ITEM_HONOR_POINTS_ID    = 43308,
     ITEM_ARENA_POINTS_ID    = 43307
+};
+
+enum ConquestPointsSources
+{
+    CP_SOURCE_ARENA     = 0,
+    CP_SOURCE_RATED_BG  = 1,
+    CP_SOURCE_MAX
 };
 
 enum ReferAFriendError
@@ -1325,7 +1333,7 @@ class Player : public Unit, public GridObject<Player>
         uint32 GetCurrency(uint32 id) const;
         bool HasCurrency(uint32 id, uint32 count) const;
         void SetCurrency(uint32 id, uint32 count);
-        void ModifyCurrency(uint32 id, int32 count, bool force = false);
+        void ModifyCurrency(uint32 id, int32 count);
 
         void ApplyEquipCooldown(Item* pItem);
 
@@ -1364,7 +1372,7 @@ class Player : public Unit, public GridObject<Player>
         bool IsUseEquipedWeapon(bool mainhand) const
         {
             // disarm applied only to mainhand weapon
-            return !mainhand || !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISARMED);
+            return !IsInShapeshiftForm() && (!mainhand || !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISARMED));
         }
         bool IsTwoHandUsed() const
         {
@@ -1467,6 +1475,9 @@ class Player : public Unit, public GridObject<Player>
         void ResetWeeklyQuestStatus();
         void ResetSeasonalQuestStatus(uint16 event_id);
 
+        void ResetCurrencyWeekCap();
+        void UpdateMaxWeekRating(ConquestPointsSources source, uint8 slot);
+
         uint16 FindQuestSlot(uint32 quest_id) const;
         uint32 GetQuestSlotQuestId(uint16 slot) const { return GetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot * MAX_QUEST_OFFSET + QUEST_ID_OFFSET); }
         uint32 GetQuestSlotState(uint16 slot)   const { return GetUInt32Value(PLAYER_QUEST_LOG_1_1 + slot * MAX_QUEST_OFFSET + QUEST_STATE_OFFSET); }
@@ -1525,7 +1536,7 @@ class Player : public Unit, public GridObject<Player>
         void SendQuestTimerFailed(uint32 quest_id);
         void SendCanTakeQuestResponse(uint32 msg) const;
         void SendQuestConfirmAccept(Quest const* quest, Player* pReceiver);
-        void SendPushToPartyResponse(Player *player, uint32 msg);
+        void SendPushToPartyResponse(Player* player, uint32 msg);
         void SendQuestUpdateAddItem(Quest const* quest, uint32 item_idx, uint16 count);
         void SendQuestUpdateAddCreatureOrGo(Quest const* quest, uint64 guid, uint32 creatureOrGO_idx, uint16 old_count, uint16 add_count);
         void SendQuestUpdateAddPlayer(Quest const* quest, uint16 old_count, uint16 add_count);
@@ -1554,7 +1565,7 @@ class Player : public Unit, public GridObject<Player>
         static uint32 GetLevelFromDB(uint64 guid);
         static bool   LoadPositionFromDB(uint32& mapid, float& x, float& y, float& z, float& o, bool& in_flight, uint64 guid);
 
-        static bool IsValidGender(uint8 Gender) { return Gender <= GENDER_FEMALE ; }
+        static bool IsValidGender(uint8 Gender) { return Gender <= GENDER_FEMALE; }
 
         /*********************************************************/
         /***                   SAVE SYSTEM                     ***/
@@ -1602,7 +1613,6 @@ class Player : public Unit, public GridObject<Player>
             MoneyChanged(value);
             UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_GOLD_VALUE_OWNED);
         }
-
         RewardedQuestSet const& getRewardedQuests() const { return _RewardedQuests; }
         QuestStatusMap& getQuestStatusMap() { return _QuestStatus; };
 
@@ -1847,7 +1857,7 @@ class Player : public Unit, public GridObject<Player>
         bool IsInSameGroupWith(Player const* p) const;
         bool IsInSameRaidWith(Player const* p) const { return p == this || (GetGroup() != NULL && GetGroup() == p->GetGroup()); }
         void UninviteFromGroup();
-        static void RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method = GROUP_REMOVEMETHOD_DEFAULT, uint64 kicker = 0 , const char* reason = NULL);
+        static void RemoveFromGroup(Group* group, uint64 guid, RemoveMethod method = GROUP_REMOVEMETHOD_DEFAULT, uint64 kicker = 0, const char* reason = NULL);
         void RemoveFromGroup(RemoveMethod method = GROUP_REMOVEMETHOD_DEFAULT) { RemoveFromGroup(GetGroup(), GetGUID(), method); }
         void SendUpdateToOutOfRangeGroupMembers();
 
@@ -1908,6 +1918,7 @@ class Player : public Unit, public GridObject<Player>
         void UpdateSpellPower();
         void UpdateMaxHealth();
         void UpdateMaxPower(Powers power);
+        void ApplyFeralAPBonus(int32 amount, bool apply);
         void UpdateAttackPowerAndDamage(bool ranged = false);
         void UpdateShieldBlockValue();
         void UpdateDamagePhysical(WeaponAttackType attType);
@@ -1946,6 +1957,7 @@ class Player : public Unit, public GridObject<Player>
         float GetMasteryPoints() { return CalculateMasteryPoints(_baseRatingValue[CR_MASTERY]); }
         float CalculateMasteryPoints(int32 curr_rating)  { return float(curr_rating * 0.0055779569892473); }
         int32 CalculateMasteryRating(float curr_mastery) { return int32(curr_mastery / 0.0055779569892473); }
+        void RemoveOrAddMasterySpells();
 
         void UpdateAllSpellCritChances();
         void UpdateSpellCritChance(uint32 school);
@@ -1961,10 +1973,11 @@ class Player : public Unit, public GridObject<Player>
 
         void RemovedInsignia(Player* looterPlr);
 
-        WorldSession* GetSession() const { return _session; }
+        WorldSession* GetSession() const { return m_session; }
 
         void BuildCreateUpdateBlockForPlayer(UpdateData *data, Player *target) const;
         void DestroyForPlayer(Player *target, bool anim = false) const;
+        void SendPlayerMoneyNotify(Player* player, uint32 Money, uint32 Modifier);
         void SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool recruitAFriend = false, float group_rate=1.0f);
 
         // notifiers
@@ -2145,7 +2158,7 @@ class Player : public Unit, public GridObject<Player>
         void ApplyEquipSpell(SpellInfo const* spellInfo, Item* item, bool apply, bool form_change = false);
         void UpdateEquipSpellsAtFormChange();
         void CastItemCombatSpell(Unit* target, WeaponAttackType attType, uint32 procVictim, uint32 procEx);
-        void CastItemUseSpell(Item *item, SpellCastTargets const& targets, uint8 cast_count);
+        void CastItemUseSpell(Item* item, SpellCastTargets const& targets, uint8 cast_count, uint32 glyphIndex);
         void CastItemCombatSpell(Unit* target, WeaponAttackType attType, uint32 procVictim, uint32 procEx, Item *item, ItemTemplate const* proto);
 
         void SendEquipmentSetList();
@@ -2169,6 +2182,9 @@ class Player : public Unit, public GridObject<Player>
         void SendLootRelease(uint64 guid);
         void SendNotifyLootItemRemoved(uint8 lootSlot);
         void SendNotifyLootMoneyRemoved();
+
+        uint32 _regenTimerCount;
+        uint32 _holyPowerRegenTimerCount; // Holy power updates ticks at every 10secs.
 
         /*********************************************************/
         /***               BATTLEGROUND SYSTEM                 ***/
@@ -2368,39 +2384,8 @@ class Player : public Unit, public GridObject<Player>
         PetSlot _currentPetSlot;
         uint32 _petSlotUsed;
 
-        void setPetSlotUsed(PetSlot slot, bool used)
-        {
-            if (used)
-                _petSlotUsed |=  (1 << uint32(slot));
-            else
-                _petSlotUsed &= ~(1 << uint32(slot));
-        }
-
-        PetSlot getSlotForNewPet()
-        {
-            // Some changes here.
-            uint32 last_known = 0;
-            // Call Pet Spells.
-            // 883, 83242, 83243, 83244, 83245
-            //  1     2      3      4      5
-            if (HasSpell(83245))
-                last_known = 5;
-            else if (HasSpell(83244))
-                last_known = 4;
-            else if (HasSpell(83243))
-                last_known = 3;
-            else if (HasSpell(83242))
-                last_known = 2;
-            else if (HasSpell(883))
-                last_known = 1;
-
-            for (uint32 i = uint32(PET_SLOT_HUNTER_FIRST); i < last_known; i++)
-                if((_petSlotUsed & (1 << i)) == 0)
-                    return PetSlot(i);
-
-            // If there is no slots available, then we should point that out
-            return PET_SLOT_FULL_LIST; //(PetSlot)last_known;
-        }
+        void setPetSlotUsed(PetSlot slot, bool used);
+        PetSlot getSlotForNewPet();
 
         // currently visible objects at player client
         typedef std::set<uint64> ClientGUIDs;
@@ -2595,7 +2580,6 @@ class Player : public Unit, public GridObject<Player>
     protected:
         // Gamemaster whisper whitelist
         WhisperListContainer WhisperList;
-        uint32 _regenTimerCount;
         float _powerFraction[MAX_POWERS];
         uint32 _contestedPvPTimer;
 
@@ -2664,6 +2648,7 @@ class Player : public Unit, public GridObject<Player>
         void _LoadInstanceTimeRestrictions(PreparedQueryResult result);
         void _LoadTalentBranchSpecs(PreparedQueryResult result);
         void _LoadCurrency(PreparedQueryResult result);
+        void _LoadConquestPointsWeekCap(PreparedQueryResult result);
 
         /*********************************************************/
         /***                   SAVE SYSTEM                     ***/
@@ -2685,6 +2670,7 @@ class Player : public Unit, public GridObject<Player>
         void _SaveTalents(SQLTransaction& trans);
         void _SaveTalentBranchSpecs(SQLTransaction& trans);
         void _SaveCurrency();
+        void _SaveConquestPointsWeekCap();
         void _SaveStats(SQLTransaction& trans);
         void _SaveInstanceTimeRestrictions(SQLTransaction& trans);
 
@@ -2720,9 +2706,13 @@ class Player : public Unit, public GridObject<Player>
 
         Item* _items[PLAYER_SLOTS_COUNT];
         uint32 _currentBuybackSlot;
-        PlayerCurrenciesMap _currencies;
+
+        PlayerCurrenciesMap m_currencies;
         uint32 _GetCurrencyWeekCap(const CurrencyTypesEntry* currency) const;
         uint32 _GetCurrencyTotalCap(const CurrencyTypesEntry* currency) const;
+
+        uint16 _maxWeekRating[CP_SOURCE_MAX];
+        uint16 _conquestPointsWeekCap[CP_SOURCE_MAX]; // without *PLAYER_CURRENCY_PRECISION!
 
         std::vector<Item*> m_itemUpdateQueue;
         bool _itemUpdateQueueBlocked;
@@ -2768,6 +2758,7 @@ class Player : public Unit, public GridObject<Player>
 
         uint32 _baseManaRegen;
         uint32 _baseHealthRegen;
+        uint32 _baseFeralAP;
 
         uint32 _baseSpellPower;
         uint32 _spellPowerFromIntellect;
@@ -2787,7 +2778,7 @@ class Player : public Unit, public GridObject<Player>
         float m_resurrectX, m_resurrectY, m_resurrectZ;
         uint32 _resurrectHealth, _resurrectMana;
 
-        WorldSession *_session;
+        WorldSession *m_session;
 
         typedef std::list<Channel*> JoinedChannelsList;
         JoinedChannelsList _channels;

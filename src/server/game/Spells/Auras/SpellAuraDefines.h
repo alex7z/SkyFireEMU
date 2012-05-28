@@ -55,8 +55,8 @@ enum AuraEffectHandleModes
 // m_schoolAbsorb
 enum DAMAGE_ABSORB_TYPE
 {
-    ALL_DAMAGE_ABSORB                           = -2,
-    ONLY_MAGIC_ABSORB                           = -1,
+    ALL_DAMAGE_ABSORB      = -2,
+    ONLY_MAGIC_ABSORB      = -1,
 };
 
 enum AuraType
@@ -391,10 +391,10 @@ enum AuraType
     SPELL_AURA_327                                 = 327,
     SPELL_AURA_328                                 = 328,    // Something related to eclipse power, only 1 spell: 2 effects: 1: +100, 2: -100
     SPELL_AURA_MOD_RUNE_REGEN_SPEED                = 329,    // NYI - This aura is for increasing power regeneration percent
-    SPELL_AURA_CAST_WHILE_WALKING                  = 330,    // NYI
+    SPELL_AURA_CAST_WHILE_WALKING                  = 330,    // This aura is for allowing certain spells to be used while walking
     SPELL_AURA_331                                 = 331,
-    SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_1         = 332,
-    SPELL_AURA_OVERRIDE_ACTIONBAR_SPELLS_2         = 333,
+    SPELL_AURA_SWAP_SPELLS                         = 332,
+    SPELL_AURA_MOD_TRAP_LAUNCHER                   = 333,
     SPELL_AURA_334                                 = 334,    // This aura blinds the target, makes all npcs and players invisible but they still can see you
     SPELL_AURA_335                                 = 335,    // Something related to invisibility
     SPELL_AURA_MOD_FLYING_RESTRICTIONS             = 336,    // NYI  - related to zone

@@ -535,7 +535,7 @@ class boss_the_lich_king : public CreatureScript
 
                 // Reset The Frozen Throne gameobjects
                 FrozenThroneResetWorker reset;
-                Skyfire::GameObjectWorker<FrozenThroneResetWorker> worker(me, reset);
+                SkyFire::GameObjectWorker<FrozenThroneResetWorker> worker(me, reset);
                 me->VisitNearbyGridObject(333.0f, worker);
 
                 // Reset any light override
@@ -1015,7 +1015,7 @@ class boss_the_lich_king : public CreatureScript
                                 GetCreatureListWithEntryInGrid(triggers, terenas, NPC_WORLD_TRIGGER_INFINITE_AOI, 100.0f);
                                 if (!triggers.empty())
                                 {
-                                    triggers.sort(Skyfire::ObjectDistanceOrderPred(terenas, true));
+                                    triggers.sort(SkyFire::ObjectDistanceOrderPred(terenas, true));
                                     Unit* spawner = triggers.front();
                                     spawner->CastSpell(spawner, SPELL_SUMMON_SPIRIT_BOMB_1, true);  // summons bombs randomly
                                     spawner->CastSpell(spawner, SPELL_SUMMON_SPIRIT_BOMB_2, true);  // summons bombs on players
@@ -1532,7 +1532,7 @@ class npc_valkyr_shadowguard : public CreatureScript
                                 if (triggers.empty())
                                     return;
 
-                                triggers.sort(Skyfire::ObjectDistanceOrderPred(me));
+                                triggers.sort(SkyFire::ObjectDistanceOrderPred(me));
                                 DoCast(target, SPELL_VALKYR_CARRY);
                                 _dropPoint.Relocate(triggers.front());
                                 _events.ScheduleEvent(EVENT_MOVE_TO_DROP_POS, 1500);
@@ -2129,7 +2129,7 @@ class spell_the_lich_king_necrotic_plague_jump : public SpellScriptLoader
 
             void SelectTarget(std::list<Unit*>& targets)
             {
-                targets.sort(Skyfire::ObjectDistanceOrderPred(GetCaster()));
+                targets.sort(SkyFire::ObjectDistanceOrderPred(GetCaster()));
                 if (targets.size() < 2)
                     return;
 
@@ -2467,7 +2467,7 @@ class spell_the_lich_king_summon_into_air : public SpellScriptLoader
             void ModDestHeight(SpellEffIndex effIndex)
             {
                 static Position const offset = {0.0f, 0.0f, 15.0f, 0.0f};
-                WorldLocation* dest = const_cast<WorldLocation*>(GetTargetDest());
+                WorldLocation* dest = const_cast<WorldLocation*>(GetExplTargetDest());
                 dest->RelocateOffset(offset);
                 // spirit bombs get higher
                 if (GetSpellInfo()->Effects[effIndex].MiscValue == NPC_SPIRIT_BOMB)
@@ -2547,7 +2547,7 @@ class spell_the_lich_king_valkyr_target_search : public SpellScriptLoader
                 if (unitList.empty())
                     return;
 
-                unitList.remove_if(Skyfire::UnitAuraCheck(true, GetSpellInfo()->Id));
+                unitList.remove_if(SkyFire::UnitAuraCheck(true, GetSpellInfo()->Id));
                 if (unitList.empty())
                     return;
 
@@ -2724,7 +2724,7 @@ class spell_the_lich_king_vile_spirits_visual : public SpellScriptLoader
             void ModDestHeight(SpellEffIndex /*effIndex*/)
             {
                 Position offset = {0.0f, 0.0f, 15.0f, 0.0f};
-                const_cast<WorldLocation*>(GetTargetDest())->RelocateOffset(offset);
+                const_cast<WorldLocation*>(GetExplTargetDest())->RelocateOffset(offset);
             }
 
             void Register()

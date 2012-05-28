@@ -409,7 +409,7 @@ public:
     int32  castTimeMin;
     int32  castTimeMax;
     uint32 castScalingMaxLevel;
-    uint32 playerClass;
+    int32 playerClass;
     float  Multiplier[3];
     float  RandomMultiplier[3];
     float  OtherMultiplier[3];
@@ -553,7 +553,7 @@ public:
     static bool _IsPositiveTarget(uint32 targetA, uint32 targetB);
 
     // unloading helpers
-    void _UnloadImplicitTargetConditionLists();
+    //void _UnloadImplicitTargetConditionLists();
 };
 
 #endif // _SPELLINFO_H
