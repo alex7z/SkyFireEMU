@@ -3046,7 +3046,7 @@ void Player::GiveXP(uint32 xp, Unit* victim, float group_rate)
 
     // RaF does NOT stack with rested experience
     if (recruitAFriend)
-        bonus_xp = 2 * xp; // xp + bonus_xp must add up to 3 * xp for RaF; calculation for quests done client-side
+        bonus_xp = 3 * xp; // xp + bonus_xp must add up to 3 * xp for RaF; calculation for quests done client-side
     else
         bonus_xp = victim ? GetXPRestBonus(xp) : 0; // XP resting bonus
 
@@ -8748,8 +8748,8 @@ void Player::_ApplyWeaponDamage(uint8 slot, ItemTemplate const* proto, ScalingSt
         attType = OFF_ATTACK;
     }
 
-    float minDamage = proto->GetMinDamage();
-    float maxDamage = proto->GetMaxDamage();
+    float minDamage = proto->minDamage;
+    float maxDamage = proto->maxDamage;
 
     // If set dpsMod in ScalingStatValue use it for min (70% from average), max (130% from average) damage
     int32 extraDPS = 0;
@@ -15746,8 +15746,8 @@ void Player::RewardQuest(Quest const *quest, uint32 reward, Object* questGiver, 
     RewardedQuestSet::const_iterator rewItr = _RewardedQuests.find(quest_id);
     bool rewarded = (rewItr != _RewardedQuests.end());
 
-    // Not give XP in case already completed once repeatable quest
-    uint32 XP = rewarded ? 0 : uint32(quest->XPValue(this)*sWorld->getRate(RATE_XP_QUEST));
+    // Not give XP in case already completed once repeatable quest, but reward XP for daily, weekly and seasonal quests
+    uint32 XP = (rewarded && !quest->IsDaily() && !quest->IsWeekly() && !quest->IsSeasonal()) ? 0 : uint32(quest->XPValue(this)*sWorld->getRate(RATE_XP_QUEST));
 
     // handle SPELL_AURA_MOD_XP_QUEST_PCT auras
     Unit::AuraEffectList const& ModXPPctAuras = GetAuraEffectsByType(SPELL_AURA_MOD_XP_QUEST_PCT);
@@ -18557,7 +18557,7 @@ void Player::LoadPet()
         Pet* pet = new Pet(this);
         uint32 usedslot = 0;
         QueryResult slot = CharacterDatabase.PQuery("SELECT currentpetslot FROM characters WHERE guid = %u",GetGUIDLow());
-        if(!slot)
+        if (!slot)
         {
             usedslot = 0;
         }
@@ -21614,7 +21614,7 @@ bool Player::BuyItemFromVendorSlot(uint64 vendorguid, uint32 vendorslot, uint32 
     if (crItem->IsGoldRequired(proto) && proto->BuyPrice > 0) //Assume price cannot be negative (do not know why it is int32)
     {
         uint32 maxCount = MAX_MONEY_AMOUNT / proto->BuyPrice;
-        if((uint32)count > maxCount)
+        if ((uint32)count > maxCount)
         {
             sLog->outError("Player %s tried to buy %u item id %u, causing overflow", GetName(), (uint32)count, proto->ItemId);
             count = (uint8)maxCount;
@@ -25102,7 +25102,7 @@ void Player::ResummonPetTemporaryUnSummonedIfAny()
     _temporaryUnsummonedPetNumber = 0;
 }
 
-bool Player::canSeeSpellClickOn(Creature const *c) const
+bool Player::canSeeSpellClickOn(Creature const* c) const
 {
     if (!c->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPELLCLICK))
         return false;
@@ -25114,13 +25114,14 @@ bool Player::canSeeSpellClickOn(Creature const *c) const
     for (SpellClickInfoContainer::const_iterator itr = clickPair.first; itr != clickPair.second; ++itr)
     {
         if (!itr->second.IsFitToRequirements(this, c))
-            return true;
+            return false;
 
         ConditionList conds = sConditionMgr->GetConditionsForSpellClickEvent(c->GetEntry(), itr->second.spellId);
         ConditionSourceInfo info = ConditionSourceInfo(const_cast<Player*>(this), const_cast<Creature*>(c));
         if (!sConditionMgr->IsObjectMeetToConditions(info, conds))
             return false;
     }
+
     return true;
 }
 
@@ -26190,10 +26191,10 @@ void Player::UpdateMasteryAuras(uint32 branch)
     bool canHaveMastery = HasAuraType(SPELL_AURA_MASTERY);
     TalentTabEntry const* tab = sTalentTabStore.LookupEntry(branch);
 
-    if(!tab)
+    if (!tab)
         return;
 
-    if(!canHaveMastery)
+    if (!canHaveMastery)
     {
         // Remove all mastery spells
         for (int i = 0; i < MAX_TALENT_MASTERY_SPELLS; i ++)
@@ -26233,7 +26234,7 @@ void Player::RecalculateMasteryAuraEffects(uint32 branch)
 {
     TalentTabEntry const* tab = sTalentTabStore.LookupEntry(branch);
 
-    if(!tab)
+    if (!tab)
         return;
 
     for (int i = 0; i < MAX_TALENT_MASTERY_SPELLS; i ++)

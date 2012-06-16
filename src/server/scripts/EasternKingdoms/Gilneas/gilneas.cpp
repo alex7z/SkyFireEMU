@@ -1179,7 +1179,6 @@ public:
     };
 };
 
-
 /*######
 ## npc_lord_darius_crowley_c3
 ######*/

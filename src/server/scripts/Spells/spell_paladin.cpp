@@ -28,7 +28,6 @@
 enum PaladinSpells
 {
     PALADIN_SPELL_DIVINE_PLEA                    = 54428,
-    PALADIN_SPELL_BLESSING_OF_SANCTUARY_BUFF     = 67480,
 
     PALADIN_SPELL_HOLY_SHOCK_R1                  = 20473,
     PALADIN_SPELL_HOLY_SHOCK_R1_DAMAGE           = 25912,
@@ -40,6 +39,17 @@ enum PaladinSpells
     SPELL_BLESSING_OF_LOWER_CITY_SHAMAN          = 37881,
 
     SPELL_DIVINE_PURPOSE_PROC                    = 90174,
+    SPELL_PALADIN_WORD_OF_GLORY                  = 85673,
+    SPELL_PALADIN_JUDG_BOLD_OVERTIME             = 89906,
+    SPELL_PALADIN_SELFLESS_HEALER_PROC           = 90811,
+
+    SPELL_PALADIN_RETRI_GUARDIAN                 = 86698,
+    SPELL_PALADIN_HOLY_GUARDIAN                  = 86669,
+    SPELL_PALADIN_PROT_GUARDIAN                  = 86659,
+
+    SPELL_DIVINE_STORM                           = 53385,
+    SPELL_DIVINE_STORM_DUMMY                     = 54171,
+    SPELL_DIVINE_STORM_HEAL                      = 54172,
 };
 
 // 31850 - Ardent Defender
@@ -169,50 +179,6 @@ public:
         return new spell_pal_blessing_of_faith_SpellScript();
     }
 };
-
-// 20911 Blessing of Sanctuary
-// 25899 Greater Blessing of Sanctuary
-class spell_pal_blessing_of_sanctuary : public SpellScriptLoader
-{
-public:
-    spell_pal_blessing_of_sanctuary() : SpellScriptLoader("spell_pal_blessing_of_sanctuary") { }
-
-    class spell_pal_blessing_of_sanctuary_AuraScript : public AuraScript
-    {
-        PrepareAuraScript(spell_pal_blessing_of_sanctuary_AuraScript)
-        bool Validate(SpellInfo const* /*entry*/)
-        {
-            if (!sSpellMgr->GetSpellInfo(PALADIN_SPELL_BLESSING_OF_SANCTUARY_BUFF))
-                return false;
-            return true;
-        }
-
-        void HandleEffectApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-        {
-            Unit* target = GetTarget();
-            if (Unit* pCaster = GetCaster())
-                pCaster->CastSpell(target, PALADIN_SPELL_BLESSING_OF_SANCTUARY_BUFF, true);
-        }
-
-        void HandleEffectRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-        {
-            Unit* target = GetTarget();
-            target->RemoveAura(PALADIN_SPELL_BLESSING_OF_SANCTUARY_BUFF, GetCasterGUID());
-        }
-
-        void Register()
-        {
-            AfterEffectApply += AuraEffectApplyFn(spell_pal_blessing_of_sanctuary_AuraScript::HandleEffectApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL_OR_REAPPLY_MASK);
-            AfterEffectRemove += AuraEffectRemoveFn(spell_pal_blessing_of_sanctuary_AuraScript::HandleEffectRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL_OR_REAPPLY_MASK);
-        }
-    };
-
-    AuraScript* GetAuraScript() const
-    {
-        return new spell_pal_blessing_of_sanctuary_AuraScript();
-    }
-};
-
 // 63521 Guarded by The Light
 class spell_pal_guarded_by_the_light : public SpellScriptLoader
 {
@@ -311,6 +277,14 @@ class spell_pal_judgements_of_the_bold : public SpellScriptLoader
         {
             PrepareAuraScript(spell_pal_judgements_of_the_bold_AuraScript);
 
+            bool Validate (SpellInfo *const /*spellEntry*/)
+            {
+                if (!sSpellMgr->GetSpellInfo(SPELL_PALADIN_JUDG_BOLD_OVERTIME))
+                    return false;
+
+                return true;
+            }
+
             bool Load()
             {
                 if (GetCaster()->GetTypeId() != TYPEID_PLAYER)
@@ -403,10 +377,22 @@ public:
 
         int32 totalheal;
 
+        bool Validate (SpellInfo *const /*spellEntry*/)
+        {
+            if (!sSpellMgr->GetSpellInfo(SPELL_PALADIN_WORD_OF_GLORY))
+                return false;
+
+            return true;
+        }
+
         bool Load()
         {
             if (GetCaster()->GetTypeId() != TYPEID_PLAYER)
                 return false;
+
+            if (GetCaster()->ToPlayer()->getClass() != CLASS_PALADIN)
+                    return false;
+
             return true;
         }
 
@@ -486,10 +472,22 @@ public:
     {
         PrepareAuraScript(spell_pal_word_of_glory_heal_AuraScript)
 
+        bool Validate (SpellInfo *const /*spellEntry*/)
+        {
+            if (!sSpellMgr->GetSpellInfo(SPELL_PALADIN_WORD_OF_GLORY)->Effects[1].Effect)
+                return false;
+
+            return true;
+        }
+
         bool Load()
         {
             if (GetCaster()->GetTypeId() != TYPEID_PLAYER)
                 return false;
+
+            if (GetCaster()->ToPlayer()->getClass() != CLASS_PALADIN)
+                return false;
+
             return true;
         }
 
@@ -560,6 +558,25 @@ class spell_pal_selfless_healer : public SpellScriptLoader
         {
             PrepareAuraScript(spell_pal_selfless_healer_AuraScript);
 
+            bool Load()
+            {
+                if (GetCaster()->GetTypeId() != TYPEID_PLAYER)
+                    return false;
+
+                if (GetCaster()->ToPlayer()->getClass() != CLASS_PALADIN)
+                    return false;
+
+                return true;
+            }
+
+            bool Validate (SpellInfo *const /*spellEntry*/)
+            {
+                if (!sSpellMgr->GetSpellInfo(SPELL_PALADIN_SELFLESS_HEALER_PROC))
+                    return false;
+
+                return true;
+            }
+
             void CalculateBonus(AuraEffect const* /*aurEff*/, int32& amount, bool& canBeRecalculated)
             {
                 if (Unit* caster = GetCaster())
@@ -621,23 +638,33 @@ public:
             return true;
         }
 
+        bool Validate (SpellInfo *const /*spellEntry*/)
+        {
+            if (!sSpellMgr->GetSpellInfo(SPELL_PALADIN_HOLY_GUARDIAN) ||
+                !sSpellMgr->GetSpellInfo(SPELL_PALADIN_RETRI_GUARDIAN) ||
+                !sSpellMgr->GetSpellInfo(SPELL_PALADIN_PROT_GUARDIAN))
+                return false;
+
+            return true;
+        }
+
         void HandleDummy(SpellEffIndex /*effIndex*/)
         {
             if (Unit* caster = GetCaster())
             {
                 if (caster->ToPlayer()->HasSpell(20473)) // Holy Shock
                 {
-                    caster->CastSpell(caster, 86669, false);
+                    caster->CastSpell(caster, SPELL_PALADIN_HOLY_GUARDIAN, false);
                     return;
                 }
                 if (caster->ToPlayer()->HasSpell(85256)) // Templar's Verdict
                 {
-                    caster->CastSpell(caster, 86698, false);
+                    caster->CastSpell(caster, SPELL_PALADIN_RETRI_GUARDIAN, false);
                     return;
                 }
                 if (caster->ToPlayer()->HasSpell(31935)) // Avenger's shield
                 {
-                    caster->CastSpell(caster, 86659, false);
+                    caster->CastSpell(caster, SPELL_PALADIN_PROT_GUARDIAN, false);
                     return;
                 }
             }
@@ -655,11 +682,44 @@ public:
     }
 };
 
+class spell_pal_divine_storm : public SpellScriptLoader
+{
+public:
+    spell_pal_divine_storm() : SpellScriptLoader("spell_pal_divine_storm") { }
+
+    class spell_pal_divine_storm_SpellScript : public SpellScript
+    {
+        PrepareSpellScript(spell_pal_divine_storm_SpellScript);
+
+        uint32 healPct;
+
+        bool Load()
+        {
+            healPct = GetSpellInfo()->Effects[EFFECT_1].CalcValue(GetCaster());
+            return true;
+        }
+
+        void TriggerHeal()
+        {
+            GetCaster()->CastCustomSpell(SPELL_DIVINE_STORM_DUMMY, SPELLVALUE_BASE_POINT0, (GetHitDamage() * healPct) / 100, GetCaster(), true);
+        }
+
+        void Register()
+        {
+            AfterHit += SpellHitFn(spell_pal_divine_storm_SpellScript::TriggerHeal);
+        }
+    };
+
+    SpellScript* GetSpellScript() const
+    {
+        return new spell_pal_divine_storm_SpellScript();
+    }
+};
+
 void AddSC_paladin_spell_scripts()
 {
     new spell_pal_ardent_defender();
     new spell_pal_blessing_of_faith();
-    new spell_pal_blessing_of_sanctuary();
     new spell_pal_guarded_by_the_light();
     new spell_pal_holy_shock();
     new spell_pal_shield_of_righteous();
@@ -667,4 +727,5 @@ void AddSC_paladin_spell_scripts()
     new spell_pal_word_of_glory();
     new spell_pal_selfless_healer();
     new spell_pal_guardian_ancient_kings();
+    new spell_pal_divine_storm();
 }

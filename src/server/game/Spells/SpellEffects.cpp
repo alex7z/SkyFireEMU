@@ -1258,9 +1258,13 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                         return;
                     m_caster->CastCustomSpell(unitTarget, 52752, &damage, NULL, NULL, true);
                     return;
-                case 54171:                                   // Divine Storm
+                case 54171:                                 // Divine Storm
                 {
-                    m_caster->CastCustomSpell(unitTarget, 54172, &damage, 0, 0, true);
+                    if (m_UniqueTargetInfo.size())
+                    {
+                        int32 heal = damage / m_UniqueTargetInfo.size();
+                        m_caster->CastCustomSpell(unitTarget, 54172, &heal, NULL, NULL, true);
+                    }
                     return;
                 }
                 case 62324: // Throw Passenger
@@ -1518,15 +1522,17 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                     return;
                 }
 
-                // Any effect which causes you to lose control of your character will supress the starfall effect.
+                // Any effect which causes you to lose control of your character will suppress the starfall effect.
                 if (m_caster->HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_FLEEING | UNIT_STATE_ROOT | UNIT_STATE_CONFUSED))
                     return;
 
                 m_caster->CastSpell(unitTarget, damage, true);
                 return;
             }
-            //Wild mushroom: detonate
-            if(m_spellInfo->Id == 88751)
+
+            // Wild mushroom: detonate (prepare this to move to scripting).
+            // summoned npc may need further scripting.
+            if (m_spellInfo->Id == 88751)
             {
                 std::list<Creature*> templist;
 
@@ -1544,52 +1550,30 @@ void Spell::EffectDummy(SpellEffIndex effIndex)
                 if (!templist.empty())
                     for (std::list<Creature*>::const_iterator itr = templist.begin(); itr != templist.end(); ++itr)
                     {
-                        //You cannot detonate other people's mushrooms
-                        if((*itr)->GetOwner() != m_caster)
+                        // You cannot detonate other people's mushrooms
+                        if ((*itr)->GetOwner() != m_caster)
                             continue;
-                        // Find all the enemies
+
+                        // Range check to find all enemies nearby
                         std::list<Unit*> targets;
                         SkyFire::AnyUnfriendlyUnitInObjectRangeCheck u_check((*itr), (*itr), 6.0f);
                         SkyFire::UnitListSearcher<SkyFire::AnyUnfriendlyUnitInObjectRangeCheck> searcher((*itr), targets, u_check);
                         (*itr)->VisitNearbyObject(6.0f, searcher);
                         for (std::list<Unit*>::const_iterator iter = targets.begin(); iter != targets.end(); ++iter)
                         {
-                            //Damage spell
+                            // Damage spell
                             (*itr)->CastSpell((*iter), 88747, true);
-                            //Suicide spell
+                            // Suicide spell
                             (*itr)->CastSpell((*itr), 92853, true);
                             (*itr)->DisappearAndDie();
                         }
                     }
                     templist.clear();
             }
-            if(m_spellInfo->Id == 1126)
-            {
-                if (m_caster->GetTypeId() == TYPEID_PLAYER)
-                {
-                    std::list<Unit*> PartyMembers;
-                    m_caster->GetPartyMembers(PartyMembers);
-                    if(PartyMembers.size() > 1)
-                        m_caster->CastSpell(unitTarget, 79061, true); // Mark of the Wild (Raid)
-                    else
-                        m_caster->CastSpell(unitTarget, 79060, true); // Mark of the Wild (Caster)
-                }
-                break;
-            }
             break;
         }
         case SPELLFAMILY_PALADIN:
         {
-            // Divine Storm
-            if (m_spellInfo->SpellFamilyFlags[1] & SPELLFAMILYFLAG1_PALADIN_DIVINESTORM && effIndex == 1)
-            {
-                int32 dmg = CalculatePctN(m_damage, damage);
-                if (!unitTarget)
-                    unitTarget = m_caster;
-                m_caster->CastCustomSpell(unitTarget, 54171, &dmg, 0, 0, true);
-                return;
-            }
-
             switch (m_spellInfo->Id)
             {
                 case 19740: // Blessing of Might
@@ -2116,9 +2100,9 @@ void Spell::EffectForceCast(SpellEffIndex effIndex)
 
     caster->CastCustomSpell(unitTarget, triggered_spell_id, &bp, &bp, &bp, true);
 
-    if(m_spellInfo->Id == 33076) // Prayer of Mending
+    if (m_spellInfo->Id == 33076) // Prayer of Mending
     {
-        if(m_caster->HasAura(14751)) // Chakra
+        if (m_caster->HasAura(14751)) // Chakra
         {
             m_caster->CastSpell(m_caster, 81206, true); // Chakra: Sanctuary
             m_caster->RemoveAurasDueToSpell(14751);
@@ -4475,9 +4459,9 @@ void Spell::EffectWeaponDmg(SpellEffIndex effIndex)
                 if (AuraEffect const* rendAndTear = m_caster->GetDummyAuraEffect(SPELLFAMILY_DRUID, 2859, 0))
                     AddPctN(totalDamagePercentMod, rendAndTear->GetAmount());
             }
-            if(m_spellInfo->Id == 80313) // Pulverize
+            if (m_spellInfo->Id == 80313) // Pulverize
             {
-                if(Aura* lacer = unitTarget->GetAura(33745)) // Lacerate
+                if (Aura* lacer = unitTarget->GetAura(33745)) // Lacerate
                 {
                     int32 bp = ((m_spellInfo->Effects[2].BasePoints * m_spellInfo->Effects[0].BasePoints / 100) * lacer->GetStackAmount()) / 100;
                     m_caster->CastCustomSpell(unitTarget, 31756, &bp, NULL, NULL, true);
@@ -5584,6 +5568,17 @@ void Spell::EffectScriptEffect(SpellEffIndex effIndex)
                 case 61177:                                 // Northrend Inscription Research
                 case 61288:                                 // Minor Inscription Research
                 case 61756:                                 // Northrend Inscription Research (FAST QA VERSION)
+                case 64323:                                 // Book of Glyph Mastery
+                {
+                    if (m_caster->GetTypeId() != TYPEID_PLAYER)
+                        return;
+
+                    // learn random explicit discovery recipe (if any)
+                    if (uint32 discoveredSpell = GetExplicitDiscoverySpell(m_spellInfo->Id, m_caster->ToPlayer()))
+                        m_caster->ToPlayer()->learnSpell(discoveredSpell, false);
+
+                    return;
+                }
                 case 62482: // Grab Crate
                 {
                     if (unitTarget)

@@ -1552,17 +1552,17 @@ void AuraEffect::HandleShapeshiftBoosts(Unit* target, bool apply) const
                         int32 bp = aurEff->GetSpellInfo()->Effects[EFFECT_2].CalcValue();
                         target->CastCustomSpell(target, 62069, &bp, NULL, NULL, true, 0, this);
                     }
-                    if(target->HasAura(16929)) // Thick Hide rank 1
+                    if (target->HasAura(16929)) // Thick Hide rank 1
                     {
                         int32 bp = 4;
                         target->CastCustomSpell(target, 62069, &bp, NULL, NULL, true);
                     }
-                    if(target->HasAura(16930)) // Thick Hide rank 2
+                    if (target->HasAura(16930)) // Thick Hide rank 2
                     {
                         int32 bp = 7;
                         target->CastCustomSpell(target, 62069, &bp, NULL, NULL, true);
                     }
-                    if(target->HasAura(16931)) // Thick Hide rank 3
+                    if (target->HasAura(16931)) // Thick Hide rank 3
                     {
                         int32 bp = 10;
                         target->CastCustomSpell(target, 62069, &bp, NULL, NULL, true);
@@ -4697,28 +4697,102 @@ void AuraEffect::HandleModDamagePercentDone(AuraApplication const* aurApp, uint8
         return;
 
     Unit* target = aurApp->GetTarget();
-    if (!target)
-        return;
 
+    sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "AURA MOD DAMAGE type:%u negative:%u", GetMiscValue(), GetAmount() > 0);
+
+    // apply item specific bonuses for already equipped weapon
     if (target->GetTypeId() == TYPEID_PLAYER)
     {
         for (int i = 0; i < MAX_ATTACK; ++i)
-            if (Item* item = target->ToPlayer()->GetWeaponForAttack(WeaponAttackType(i), false))
-                target->ToPlayer()->_ApplyWeaponDependentAuraDamageMod(item, WeaponAttackType(i), this, apply);
+            if (Item* pItem = target->ToPlayer()->GetWeaponForAttack(WeaponAttackType(i), true))
+                target->ToPlayer()->_ApplyWeaponDependentAuraDamageMod(pItem, WeaponAttackType(i), this, apply);
     }
 
-    if ((GetMiscValue() & SPELL_SCHOOL_MASK_NORMAL) && (GetSpellInfo()->EquippedItemClass == -1 || target->GetTypeId() != TYPEID_PLAYER))
+    /*  GetMiscValue() is bitmask of spell schools
+     *  1 (0-bit) - normal school damage (SPELL_SCHOOL_MASK_NORMAL)
+     *  126 - full bitmask all magic damages (SPELL_SCHOOL_MASK_MAGIC) including wand
+     *  127 - full bitmask any damages
+     *
+     *  mods must be applied base at equipped weapon class and subclass comparison
+     *  with spell->EquippedItemClass and  EquippedItemSubClassMask and EquippedItemInventoryTypeMask
+     *  GetMiscValue() comparison with item generated damage types
+     */
+    if ((GetMiscValue() & SPELL_SCHOOL_MASK_NORMAL) != 0)
     {
-        target->HandleStatModifier(UNIT_MOD_DAMAGE_MAINHAND,         TOTAL_PCT, float (GetAmount()), apply);
-        target->HandleStatModifier(UNIT_MOD_DAMAGE_OFFHAND,          TOTAL_PCT, float (GetAmount()), apply);
-        target->HandleStatModifier(UNIT_MOD_DAMAGE_RANGED,           TOTAL_PCT, float (GetAmount()), apply);
+        // apply generic physical damage bonuses including wand case
+        if (GetSpellInfo()->EquippedItemClass == -1 || target->GetTypeId() != TYPEID_PLAYER)
+        {
+            target->HandleStatModifier(UNIT_MOD_DAMAGE_MAINHAND, TOTAL_PCT, float(GetAmount()), apply);
+            target->HandleStatModifier(UNIT_MOD_DAMAGE_OFFHAND, TOTAL_PCT, float(GetAmount()), apply);
+            target->HandleStatModifier(UNIT_MOD_DAMAGE_RANGED, TOTAL_PCT, float(GetAmount()), apply);
 
-        if (target->GetTypeId() == TYPEID_PLAYER)
-            target->ToPlayer()->ApplyPercentModFloatValue(PLAYER_FIELD_MOD_DAMAGE_DONE_PCT, float (GetAmount()), apply);
+            // For show in client
+            if (target->GetTypeId() == TYPEID_PLAYER)
+            {
+                if (GetAmount() > 0)
+                    target->ApplyModUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS, GetAmount(), apply);
+                else
+                    target->ApplyModUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_NEG, -GetAmount(), apply);
+            }
+        }
+        else
+        {
+            // done in Player::_ApplyWeaponDependentAuraMods
+        }
     }
-    else
+
+    // Skip non magic case for speedup
+    if ((GetMiscValue() & SPELL_SCHOOL_MASK_MAGIC) == 0)
+        return;
+
+    if (GetSpellInfo()->EquippedItemClass != -1 || GetSpellInfo()->EquippedItemInventoryTypeMask != 0)
     {
-        // done in Player::_ApplyWeaponDependentAuraMods for SPELL_SCHOOL_MASK_NORMAL && EquippedItemClass != -1 and also for wand case
+        /* wand magic case (skip generic to all item spell bonuses)
+         * done in Player::_ApplyWeaponDependentAuraMods
+         * Skip item specific requirements if not wand magic damage
+         */
+        return;
+    }
+
+    // Magic damage percent modifiers implemented in Unit::SpellDamageBonus
+    // Send info to client
+    if (target->GetTypeId() == TYPEID_PLAYER)
+    {
+        if (GetAmount() > 0)
+        {
+            for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; i++)
+            {
+                if ((GetMiscValue() & (1 << i)) != 0)
+                    target->ApplyModUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS+i, GetAmount(), apply);
+            }
+        }
+        else
+        {
+            for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; i++)
+            {
+                if ((GetMiscValue() & (1 << i)) != 0)
+                    target->ApplyModUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_NEG+i, -GetAmount(), apply);
+            }
+        }
+        if (Guardian* pet = target->ToPlayer()->GetGuardianPet())
+            pet->UpdateAttackPowerAndDamage();
+    }
+
+    if (GetSpellInfo()->Id == 84963) // Inquisition
+    {
+        switch (GetBase()->GetUnitOwner()->GetPower(POWER_HOLY_POWER))
+        {
+            case 0: // 1.HP
+                GetBase()->SetDuration(4000);
+                break;
+            case 1: // 2.HP
+                GetBase()->SetDuration(8000);
+                break;
+            case 2: // 3.HP
+                GetBase()->SetDuration(12000);
+                break;
+        }
+        target->SetPower(POWER_HOLY_POWER, 0);
     }
 }
 
@@ -4902,7 +4976,7 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                                     break;
                             }
 
-                            if(spell_Id && !caster->GetAura(spell_Id))
+                            if (spell_Id && !caster->GetAura(spell_Id))
                                 caster->CastSpell(caster, spell_Id, true, NULL, aurEff);
                         }
                     }
@@ -4993,6 +5067,7 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                     if (target->HasAura(92363, GetCasterGUID())) // Get talent Malfurion's gift rank 1
                         if (roll_chance_i(2)) // Procs only 2% of the time
                             target->CastSpell(caster, 16870, true, NULL, this); // Clearcasting
+
                     if (target->HasAura(92364, GetCasterGUID())) // Get talent Malfurion's gift rank 2
                         if (roll_chance_i(4)) // Procs only 4% of the time
                             target->CastSpell(caster, 16870, true, NULL, this); // Clearcasting
@@ -5398,7 +5473,6 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
     }
 
     // AT APPLY & REMOVE
-
     switch (m_spellInfo->SpellFamilyName)
     {
         case SPELLFAMILY_GENERIC:
@@ -5715,7 +5789,7 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
         }
         case SPELLFAMILY_ROGUE:
         {
-            switch(GetId())
+            switch (GetId())
             {
                 // Smoke bomb
                 case 76577:
@@ -5724,7 +5798,7 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                     {
                         if (SpellEntry const *spellInfo = sSpellStore.LookupEntry(88611))
                         {
-                            if(Aura* aur = Aura::TryCreate(m_spellInfo, 0, target, this->GetCaster()))
+                            if (Aura* aur = Aura::TryCreate(m_spellInfo, 0, target, this->GetCaster()))
                             {
                                 aur->SetMaxDuration(GetBase()->GetDuration());
                                 aur->SetDuration(GetBase()->GetDuration());
@@ -6241,27 +6315,6 @@ void AuraEffect::HandlePeriodicDummyAuraTick(Unit* target, Unit* caster) const
             if (GetId() == 55342)
                 // Set name of summons to name of caster
                 target->CastSpell((Unit *)NULL, m_spellInfo->Effects[m_effIndex].TriggerSpell, true);
-            break;
-        }
-        case SPELLFAMILY_WARLOCK:
-        {
-            switch (GetSpellInfo()->Id)
-            {
-                // Demonic Circle
-                case 48018:
-                    if (GameObject* obj = target->GetGameObject(GetSpellInfo()->Id))
-                    {
-                        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(48020);
-                        if (target->IsWithinDist(obj, spellInfo->GetMaxRange(true)))
-                        {
-                            if (!target->HasAura(62388))
-                                target->CastSpell(target, 62388, true);
-                        }
-                        else
-                            target->RemoveAura(62388);
-                    }
-                    break;
-            }
             break;
         }
         case SPELLFAMILY_DRUID:
